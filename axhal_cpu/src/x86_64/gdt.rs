@@ -63,8 +63,10 @@ impl GdtStruct {
     /// This function is unsafe because it manipulates the CPU's privileged
     /// states.
     pub unsafe fn load(&'static self) {
-        lgdt(&self.pointer());
-        CS::set_reg(Self::KCODE64_SELECTOR);
+        unsafe {
+            lgdt(&self.pointer());
+            CS::set_reg(Self::KCODE64_SELECTOR);
+        }
     }
 
     /// Loads the TSS into the CPU (executes the `ltr` instruction).
@@ -74,7 +76,7 @@ impl GdtStruct {
     /// This function is unsafe because it manipulates the CPU's privileged
     /// states.
     pub unsafe fn load_tss(&'static self) {
-        load_tss(Self::TSS_SELECTOR);
+        unsafe { load_tss(Self::TSS_SELECTOR) }
     }
 }
 

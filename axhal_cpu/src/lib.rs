@@ -1,5 +1,17 @@
 //! Architecture-specific types and operations.
 
+#![no_std]
+#![feature(naked_functions)]
+
+#[macro_use]
+extern crate log;
+
+#[macro_use]
+extern crate memory_addr;
+
+#[macro_use]
+pub mod trap;
+
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "x86_64")] {
         mod x86_64;
