@@ -3,11 +3,19 @@ resolver = "2"
 
 members = [
     "axhal_cpu",
+    "axhal_plat",
+    "axhal_plat_macros",
 ]
 
 [workspace.package]
 edition = "2024"
-authors = ["Yuekai Jia <equation618@gmail.com>"]
+authors = [
+    "Yuekai Jia <equation618@gmail.com>",
+    "yanjuguang <coolyanjg@163.com>",
+    "Su Mingxian <aarkegz@gmail.com>",
+    "RobertYuan <634954435@qq.com>",
+    "hky1999 <keyang.hu@qq.com>",
+]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
 homepage = "https://github.com/arceos-org/arceos"
 documentation = "https://arceos-org.github.io/axhal_crates"

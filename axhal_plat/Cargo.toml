@@ -1,0 +1,19 @@
+[package]
+name = "axhal_plat"
+version = "0.1.0"
+description = "This crate defines unified interfaces for various hardware platforms."
+documentation = "https://docs.rs/axhal_plat"
+keywords = ["arceos", "hal", "hardware-abstraction-layer"]
+categories = ["embedded", "no-std", "hardware-support", "os"]
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+memory_addr = "0.3"
+bitflags = "2.6"
+crate_interface = "0.1"
+handler_table = "0.1"
+axhal_plat_macros = { path = "../axhal_plat_macros", version = "0.1.0" }
