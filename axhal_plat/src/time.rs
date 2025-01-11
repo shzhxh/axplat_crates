@@ -31,12 +31,14 @@ pub trait TimeIf {
     /// Converts nanoseconds to hardware ticks.
     fn nanos_to_ticks(nanos: u64) -> u64;
 
-    /// Return epoch offset in nanoseconds (wall time offset to monotonic clock start).
+    /// Return epoch offset in nanoseconds (wall time offset to monotonic
+    /// clock start).
     fn epochoffset_nanos() -> u64;
 
     /// Set a one-shot timer.
     ///
-    /// A timer interrupt will be triggered at the specified monotonic time deadline (in nanoseconds).
+    /// A timer interrupt will be triggered at the specified monotonic time
+    /// deadline (in nanoseconds).
     fn set_oneshot_timer(deadline_ns: u64);
 }
 

@@ -5,10 +5,11 @@ members = [
     "axhal_cpu",
     "axhal_plat",
     "axhal_plat_macros",
+    "axplat-cli",
 ]
 
 [workspace.package]
-edition = "2024"
+edition = "2021"
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
     "yanjuguang <coolyanjg@163.com>",

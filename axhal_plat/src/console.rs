@@ -5,10 +5,11 @@ use core::fmt::{Arguments, Result, Write};
 /// Console input and output interface.
 #[def_plat_interface]
 pub trait ConsoleIf {
-    /// Writes bytes to the console from input u8 slice.
+    /// Writes given bytes to the console.
     fn write_bytes(bytes: &[u8]);
 
     /// Reads bytes from the console into the given mutable slice.
+    ///
     /// Returns the number of bytes read.
     fn read_bytes(bytes: &mut [u8]) -> usize;
 }

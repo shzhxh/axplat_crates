@@ -1,5 +1,5 @@
-use riscv::interrupt::Trap;
 use riscv::interrupt::supervisor::{Exception as E, Interrupt as I};
+use riscv::interrupt::Trap;
 use riscv::register::{scause, stval};
 
 use super::TrapFrame;
