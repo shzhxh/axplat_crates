@@ -15,5 +15,5 @@ repository.workspace = true
 memory_addr = "0.3"
 bitflags = "2.6"
 crate_interface = "0.1"
-handler_table = "0.1"
+handler_table = "0.1.2"
 axhal_plat_macros = { path = "../axhal_plat_macros", version = "0.1.0" }
