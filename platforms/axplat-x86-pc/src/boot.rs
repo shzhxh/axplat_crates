@@ -1,9 +1,11 @@
+//! Kernel booting using multiboot header.
+
 use core::arch::global_asm;
 
 use x86_64::registers::control::{Cr0Flags, Cr4Flags};
 use x86_64::registers::model_specific::EferFlags;
 
-use axconfig::{TASK_STACK_SIZE, plat::PHYS_VIRT_OFFSET};
+use crate::config::plat::{BOOT_STACK_SIZE, PHYS_VIRT_OFFSET};
 
 /// Flags set in the ’flags’ member of the multiboot header.
 ///
@@ -31,18 +33,18 @@ const CR4: u64 = Cr4Flags::PHYSICAL_ADDRESS_EXTENSION.bits()
 const EFER: u64 = EferFlags::LONG_MODE_ENABLE.bits() | EferFlags::NO_EXECUTE_ENABLE.bits();
 
 #[unsafe(link_section = ".bss.stack")]
-static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
+static mut BOOT_STACK: [u8; BOOT_STACK_SIZE] = [0; BOOT_STACK_SIZE];
 
 global_asm!(
     include_str!("multiboot.S"),
     mb_magic = const MULTIBOOT_BOOTLOADER_MAGIC,
     mb_hdr_magic = const MULTIBOOT_HEADER_MAGIC,
     mb_hdr_flags = const MULTIBOOT_HEADER_FLAGS,
-    entry = sym super::rust_entry,
-    entry_secondary = sym super::rust_entry_secondary,
+    entry = sym crate::rust_entry,
+    entry_secondary = sym crate::rust_entry_secondary,
 
     offset = const PHYS_VIRT_OFFSET,
-    boot_stack_size = const TASK_STACK_SIZE,
+    boot_stack_size = const BOOT_STACK_SIZE,
     boot_stack = sym BOOT_STACK,
 
     cr0 = const CR0,

@@ -3,31 +3,31 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  ci:
+  crates:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         rust-toolchain: [nightly]
-        targets: [x86_64-unknown-linux-gnu, x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none]
+        target: [x86_64-unknown-linux-gnu, x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none]
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@nightly
       with:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
-        targets: ${{ matrix.targets }}
+        targets: ${{ matrix.target }}
     - name: Check rust version
       run: rustc --version --verbose
     - name: Check code format
       run: cargo fmt --all -- --check
     - name: Clippy
-      run: cargo clippy --target ${{ matrix.targets }} --all-features --workspace --exclude axplat-cli
+      run: cargo clippy -p axhal_cpu -p axhal_plat --target ${{ matrix.target }} --all-features
     - name: Build
-      run: cargo build --target ${{ matrix.targets }} --all-features --workspace --exclude axplat-cli
+      run: cargo build -p axhal_cpu -p axhal_plat --target ${{ matrix.target }} --all-features
     - name: Unit test
-      if: ${{ matrix.targets == 'x86_64-unknown-linux-gnu' }}
-      run: cargo test --target ${{ matrix.targets }} -- --nocapture
+      if: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
+      run: cargo test -p axhal_cpu -p axhal_plat --all-features -- --nocapture
 
   cli:
     runs-on: ubuntu-latest
@@ -43,6 +43,25 @@ jobs:
     - name: Build
       run: cargo build -p axplat-cli
 
+  platforms:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: axplat-x86-pc
+            target: x86_64-unknown-none
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rust-src, clippy
+        targets: ${{ matrix.platform.target }}
+    - name: Clippy
+      run: cargo clippy --target ${{ matrix.platform.target }} -p ${{ matrix.platform.name }} --all-features
+    - name: Build
+      run: cargo build --target ${{ matrix.platform.target }} -p ${{ matrix.platform.name }} --all-features
+
   doc:
     runs-on: ubuntu-latest
     strategy:
@@ -57,7 +76,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@nightly
     - name: Build docs
       continue-on-error: ${{ github.ref != env.default-branch && github.event_name != 'pull_request' }}
-      run: cargo doc --no-deps --all-features --workspace --exclude axplat-cli
+      run: cargo doc --no-deps --all-features --workspace --exclude "axplat-*"
     - name: Deploy to Github Pages
       if: ${{ github.ref == env.default-branch }}
       uses: JamesIves/github-pages-deploy-action@v4

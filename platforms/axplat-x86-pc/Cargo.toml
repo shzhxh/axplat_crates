@@ -1,0 +1,34 @@
+[package]
+name = "axplat-x86-pc"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+
+[features]
+smp = []
+irq = []
+rtc = ["x86_rtc"]
+fp_simd = []
+reboot-on-system-off = []
+
+[dependencies]
+kspin = "0.1"
+log = "=0.4.21"
+bitflags = "2.6"
+lazyinit = "0.2"
+int_ratio = "0.1"
+percpu = "0.2"
+memory_addr = "0.3"
+axconfig-gen-macros = { version = "0.1", features = ["nightly"] }
+axhal_cpu = { version = "0.1.0", path = "../../axhal_cpu" }
+axhal_plat = { version = "0.1.0", path = "../../axhal_plat" }
+
+x86 = "0.52"
+x86_64 = "0.15.2"
+x2apic = "0.4"
+raw-cpuid = "11.1"
+x86_rtc = { version = "0.1", optional = true }

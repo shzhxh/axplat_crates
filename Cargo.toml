@@ -6,6 +6,7 @@ members = [
     "axhal_plat",
     "axhal_plat_macros",
     "axplat-cli",
+    "platforms/axplat-x86-pc",
 ]
 
 [workspace.package]

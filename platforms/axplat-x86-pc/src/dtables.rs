@@ -1,6 +1,6 @@
 //! Description tables (per-CPU GDT, per-CPU ISS, IDT)
 
-use crate::arch::{GdtStruct, IdtStruct, TaskStateSegment};
+use axhal_cpu::{GdtStruct, IdtStruct, TaskStateSegment};
 use lazyinit::LazyInit;
 
 static IDT: LazyInit<IdtStruct> = LazyInit::new();
@@ -12,6 +12,7 @@ static TSS: LazyInit<TaskStateSegment> = LazyInit::new();
 static GDT: LazyInit<GdtStruct> = LazyInit::new();
 
 fn init_percpu() {
+    percpu::init_percpu_reg(super::current_cpu_id());
     unsafe {
         IDT.load();
         let tss = TSS.current_ref_mut_raw();
@@ -24,14 +25,15 @@ fn init_percpu() {
 }
 
 /// Initializes IDT, GDT on the primary CPU.
-pub(super) fn init_primary() {
-    axlog::ax_println!("\nInitialize IDT & GDT...");
+pub fn init_primary() {
+    axhal_plat::console_println!("\nInitialize IDT & GDT...");
+    percpu::init();
     IDT.init_once(IdtStruct::new());
     init_percpu();
 }
 
 /// Initializes IDT, GDT on secondary CPUs.
 #[cfg(feature = "smp")]
-pub(super) fn init_secondary() {
+pub fn init_secondary() {
     init_percpu();
 }

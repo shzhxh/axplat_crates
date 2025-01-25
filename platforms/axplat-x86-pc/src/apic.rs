@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+//! Advanced Programmable Interrupt Controller (APIC) support.
 
 use core::{cell::SyncUnsafeCell, mem::MaybeUninit};
 
@@ -6,7 +6,7 @@ use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::PhysAddr;
 use x2apic::ioapic::IoApic;
-use x2apic::lapic::{LocalApic, LocalApicBuilder, xapic_base};
+use x2apic::lapic::{xapic_base, LocalApic, LocalApicBuilder};
 use x86_64::instructions::port::Port;
 
 use self::vectors::*;
@@ -17,12 +17,6 @@ pub(super) mod vectors {
     pub const APIC_SPURIOUS_VECTOR: u8 = 0xf1;
     pub const APIC_ERROR_VECTOR: u8 = 0xf2;
 }
-
-/// The maximum number of IRQs.
-pub const MAX_IRQ_COUNT: usize = 256;
-
-/// The timer IRQ number.
-pub const TIMER_IRQ_NUM: usize = APIC_TIMER_VECTOR as usize;
 
 const IO_APIC_BASE: PhysAddr = pa!(0xFEC0_0000);
 
@@ -46,32 +40,12 @@ pub fn set_enable(vector: usize, enabled: bool) {
     }
 }
 
-/// Registers an IRQ handler for the given IRQ.
-///
-/// It also enables the IRQ if the registration succeeds. It returns `false` if
-/// the registration failed.
-#[cfg(feature = "irq")]
-pub fn register_handler(vector: usize, handler: crate::irq::IrqHandler) -> bool {
-    crate::irq::register_handler_common(vector, handler)
-}
-
-/// Dispatches the IRQ.
-///
-/// This function is called by the common interrupt handler. It looks
-/// up in the IRQ handler table and calls the corresponding handler. If
-/// necessary, it also acknowledges the interrupt controller after handling.
-#[cfg(feature = "irq")]
-pub fn dispatch_irq(vector: usize) {
-    crate::irq::dispatch_irq_common(vector);
-    unsafe { local_apic().end_of_interrupt() };
-}
-
-pub(super) fn local_apic<'a>() -> &'a mut LocalApic {
+pub fn local_apic<'a>() -> &'a mut LocalApic {
     // It's safe as `LOCAL_APIC` is initialized in `init_primary`.
     unsafe { LOCAL_APIC.get().as_mut().unwrap().assume_init_mut() }
 }
 
-pub(super) fn raw_apic_id(id_u8: u8) -> u32 {
+pub fn raw_apic_id(id_u8: u8) -> u32 {
     if unsafe { IS_X2APIC } {
         id_u8 as u32
     } else {
@@ -86,7 +60,7 @@ fn cpu_has_x2apic() -> bool {
     }
 }
 
-pub(super) fn init_primary() {
+pub fn init_primary() {
     info!("Initialize Local APIC...");
 
     unsafe {
@@ -122,6 +96,61 @@ pub(super) fn init_primary() {
 }
 
 #[cfg(feature = "smp")]
-pub(super) fn init_secondary() {
+pub fn init_secondary() {
     unsafe { local_apic().enable() };
+}
+
+#[cfg(feature = "irq")]
+mod irq_impl {
+    use axhal_plat::irq::{HandlerTable, IrqHandler, IrqIf};
+
+    /// The maximum number of IRQs.
+    const MAX_IRQ_COUNT: usize = 256;
+
+    static IRQ_HANDLER_TABLE: HandlerTable<MAX_IRQ_COUNT> = HandlerTable::new();
+
+    struct IrqIfImpl;
+
+    #[impl_plat_interface]
+    impl IrqIf for IrqIfImpl {
+        /// Enables or disables the given IRQ.
+        fn set_enable(vector: usize, enabled: bool) {
+            super::set_enable(vector, enabled);
+        }
+
+        /// Registers an IRQ handler for the given IRQ.
+        ///
+        /// It also enables the IRQ if the registration succeeds. It returns `false` if
+        /// the registration failed.
+        fn register(vector: usize, handler: IrqHandler) -> bool {
+            if IRQ_HANDLER_TABLE.register_handler(vector, handler) {
+                Self::set_enable(vector, true);
+                return true;
+            }
+            warn!("register handler for IRQ {} failed", vector);
+            false
+        }
+
+        /// Unregisters the IRQ handler for the given IRQ.
+        ///
+        /// It also disables the IRQ if the unregistration succeeds. It returns the
+        /// existing handler if it is registered, `None` otherwise.
+        fn unregister(vector: usize) -> Option<IrqHandler> {
+            Self::set_enable(vector, false);
+            IRQ_HANDLER_TABLE.unregister_handler(vector)
+        }
+
+        /// Handles the IRQ.
+        ///
+        /// It is called by the common interrupt handler. It should look up in the
+        /// IRQ handler table and calls the corresponding handler. If necessary, it
+        /// also acknowledges the interrupt controller after handling.
+        fn handle(vector: usize) {
+            trace!("IRQ {}", vector);
+            if !IRQ_HANDLER_TABLE.handle(vector) {
+                warn!("Unhandled IRQ {}", vector);
+            }
+            unsafe { super::local_apic().end_of_interrupt() };
+        }
+    }
 }
