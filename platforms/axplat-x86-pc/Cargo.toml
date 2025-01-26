@@ -31,4 +31,5 @@ x86 = "0.52"
 x86_64 = "0.15.2"
 x2apic = "0.4"
 raw-cpuid = "11.1"
+uart_16550 = "0.3"
 x86_rtc = { version = "0.1", optional = true }
