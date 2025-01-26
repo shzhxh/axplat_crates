@@ -31,13 +31,14 @@ fn current_cpu_id() -> usize {
     }
 }
 
-unsafe extern "C" fn rust_entry(magic: usize, _mbi: usize) {
+unsafe extern "C" fn rust_entry(magic: usize, mbi: usize) {
     // TODO: handle multiboot info
     if magic == self::boot::MULTIBOOT_BOOTLOADER_MAGIC {
         axhal_plat::mem::clear_bss();
         self::console::init();
         self::dtables::init_primary();
         self::time::init_early();
+        self::mem::init(mbi);
         axhal_plat::call_main(current_cpu_id(), 0);
     }
 }

@@ -23,6 +23,7 @@ lazyinit = "0.2"
 int_ratio = "0.1"
 percpu = "0.2"
 memory_addr = "0.3"
+heapless = "0.8"
 axconfig-gen-macros = { version = "0.1", features = ["nightly"] }
 axhal_cpu = { version = "0.1.0", path = "../../axhal_cpu" }
 axhal_plat = { version = "0.1.0", path = "../../axhal_plat" }
@@ -30,6 +31,7 @@ axhal_plat = { version = "0.1.0", path = "../../axhal_plat" }
 x86 = "0.52"
 x86_64 = "0.15.2"
 x2apic = "0.4"
+multiboot = "0.8"
 raw-cpuid = "11.1"
 uart_16550 = "0.3"
 x86_rtc = { version = "0.1", optional = true }
