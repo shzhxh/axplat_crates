@@ -9,10 +9,10 @@ documentation.workspace = true
 repository.workspace = true
 
 [features]
-smp = []
+fp_simd = ["axhal_cpu/fp_simd"]
 irq = []
 rtc = ["x86_rtc"]
-fp_simd = []
+smp = []
 reboot-on-system-off = []
 
 [dependencies]

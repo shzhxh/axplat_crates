@@ -1,5 +1,5 @@
 # Architecture identifier.
-arch = "x86_64" # str
+arch = "x86_64"     # str
 # Platform identifier.
 platform = "x86-pc" # str
 
@@ -31,6 +31,7 @@ kernel-aspace-size = "0x0000_7fff_ffff_f000"    # uint
 # Stack size on bootstrapping. (256K)
 boot-stack-size = 0x40000                       # uint
 
+#
 # Device specifications
 #
 [devices]

@@ -7,6 +7,8 @@ members = [
     "axhal_plat_macros",
     "axplat-cli",
     "platforms/axplat-x86-pc",
+    "platforms/axplat-aarch64-common",
+    "platforms/axplat-aarch64-qemu-virt",
 ]
 
 [workspace.package]

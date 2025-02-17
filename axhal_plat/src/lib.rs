@@ -19,12 +19,12 @@ pub mod __priv {
     pub use crate_interface::{call_interface, def_interface};
 }
 
-/// Call the function decorated by [`crate::main`] for the primary core.
+/// Call the function decorated by [`axhal_plat::main`][main] for the primary core.
 pub fn call_main(cpu_id: usize, dtb: usize) -> ! {
     unsafe { __axhal_plat_main(cpu_id, dtb) }
 }
 
-/// Call the function decorated by [`crate::secondary_main`] for secondary cores.
+/// Call the function decorated by [`axhal_plat::secondary_main`][secondary_main] for secondary cores.
 pub fn call_secondary_main(cpu_id: usize) -> ! {
     unsafe { __axhal_plat_secondary_main(cpu_id) }
 }

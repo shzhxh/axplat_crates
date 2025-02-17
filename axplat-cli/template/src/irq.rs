@@ -5,7 +5,7 @@ struct IrqIfImpl;
 #[impl_plat_interface]
 impl IrqIf for IrqIfImpl {
     /// Enables or disables the given IRQ.
-    fn set_enable(vector: usize, enabled: bool) {
+    fn set_enable(irq: usize, enabled: bool) {
         todo!()
     }
 
@@ -13,7 +13,7 @@ impl IrqIf for IrqIfImpl {
     ///
     /// It also enables the IRQ if the registration succeeds. It returns `false`
     /// if the registration failed.
-    fn register(vector: usize, handler: IrqHandler) -> bool {
+    fn register(irq: usize, handler: IrqHandler) -> bool {
         todo!()
     }
 
@@ -21,7 +21,7 @@ impl IrqIf for IrqIfImpl {
     ///
     /// It also disables the IRQ if the unregistration succeeds. It returns the
     /// existing handler if it is registered, `None` otherwise.
-    fn unregister(vector: usize) -> Option<IrqHandler> {
+    fn unregister(irq: usize) -> Option<IrqHandler> {
         todo!()
     }
 
@@ -30,7 +30,7 @@ impl IrqIf for IrqIfImpl {
     /// It is called by the common interrupt handler. It should look up in the
     /// IRQ handler table and calls the corresponding handler. If necessary, it
     /// also acknowledges the interrupt controller after handling.
-    fn handle(vector: usize) {
+    fn handle(irq: usize) {
         todo!()
     }
 }
