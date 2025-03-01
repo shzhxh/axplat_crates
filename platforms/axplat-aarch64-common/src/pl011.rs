@@ -7,9 +7,7 @@ use memory_addr::VirtAddr;
 
 static UART: LazyInit<SpinNoIrq<Pl011Uart>> = LazyInit::new();
 
-/// Writes a byte to the console.
-pub fn putchar(c: u8) {
-    let mut uart = UART.lock();
+fn do_putchar(uart: &mut Pl011Uart, c: u8) {
     match c {
         b'\n' => {
             uart.putchar(b'\r');
@@ -19,15 +17,21 @@ pub fn putchar(c: u8) {
     }
 }
 
+/// Writes a byte to the console.
+pub fn putchar(c: u8) {
+    do_putchar(&mut UART.lock(), c);
+}
+
 /// Reads a byte from the console, or returns [`None`] if no input is available.
-fn getchar() -> Option<u8> {
+pub fn getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 
 /// Write a slice of bytes to the console.
 pub fn write_bytes(bytes: &[u8]) {
+    let mut uart = UART.lock();
     for c in bytes {
-        putchar(*c);
+        do_putchar(&mut uart, *c);
     }
 }
 

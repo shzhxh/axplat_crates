@@ -1,0 +1,25 @@
+[package]
+name = "axplat-aarch64-raspi"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+
+[features]
+fp_simd = ["axhal_cpu/fp_simd"]
+irq = []
+rtc = [] # Not implemented, currently no effect
+smp = []
+
+[dependencies]
+log = "=0.4.21"
+aarch64-cpu = "10.0"
+memory_addr = "0.3"
+page_table_entry = "0.5"
+axconfig-gen-macros = "0.1"
+axplat-aarch64-common = { version = "0.1", path = "../axplat-aarch64-common" }
+axhal_cpu = { version = "0.1", path = "../../axhal_cpu" }
+axhal_plat = { version = "0.1", path = "../../axhal_plat" }

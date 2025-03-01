@@ -3,9 +3,6 @@ arch = "aarch64"                    # str
 # Platform identifier.
 platform = "aarch64-qemu-virt"      # str
 
-[includes]
-axplat-aarch64-common = "0.1.0"
-
 #
 # Platform configs
 #
@@ -97,10 +94,10 @@ pci-ranges = [
 ]                               # [(uint, uint)]
 # UART Address
 uart-paddr = 0x0900_0000        # uint
-# UART IRQ number
-uart-irq = 1                    # uint
+# UART IRQ number (SPI, 1)
+uart-irq = 0x21                 # uint
 # Timer interrupt num (PPI, physical).
-timer-irq = 30                  # uint
+timer-irq = 0x1e                # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0x0801_0000        # uint

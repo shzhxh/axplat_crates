@@ -185,6 +185,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "axplat-aarch64-raspi"
+version = "0.1.0"
+dependencies = [
+ "aarch64-cpu",
+ "axconfig-gen-macros",
+ "axhal_cpu",
+ "axhal_plat",
+ "axplat-aarch64-common",
+ "log",
+ "memory_addr",
+ "page_table_entry",
+]
+
+[[package]]
 name = "axplat-cli"
 version = "0.1.0"
 dependencies = [
