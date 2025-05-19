@@ -9,7 +9,7 @@ documentation.workspace = true
 repository.workspace = true
 
 [features]
-fp_simd = ["axhal_cpu/fp_simd"]
+fp_simd = ["axcpu/fp_simd"]
 irq = []
 rtc = [] # Not implemented, currently no effect
 smp = []
@@ -21,5 +21,5 @@ memory_addr = "0.3"
 page_table_entry = "0.5"
 axconfig-gen-macros = "0.1"
 axplat-aarch64-common = { version = "0.1", path = "../axplat-aarch64-common" }
-axhal_cpu = { version = "0.1", path = "../../axhal_cpu" }
-axplat = { version = "0.1", path = "../../axplat" }
+axcpu = { workspace = true }
+axplat = { workspace = true }

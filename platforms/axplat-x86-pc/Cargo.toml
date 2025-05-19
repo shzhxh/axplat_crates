@@ -9,7 +9,7 @@ documentation.workspace = true
 repository.workspace = true
 
 [features]
-fp_simd = ["axhal_cpu/fp_simd"]
+fp_simd = ["axcpu/fp_simd"]
 irq = []
 rtc = ["x86_rtc"]
 smp = []
@@ -25,13 +25,13 @@ percpu = "0.2"
 memory_addr = "0.3"
 heapless = "0.8"
 axconfig-gen-macros = { version = "0.1", features = ["nightly"] }
-axhal_cpu = { version = "0.1.0", path = "../../axhal_cpu" }
-axplat = { version = "0.1.0", path = "../../axplat" }
+axcpu = { workspace = true }
+axplat = { workspace = true }
 
 x86 = "0.52"
 x86_64 = "0.15.2"
 x2apic = "0.4"
 multiboot = "0.8"
-raw-cpuid = "11.1"
+raw-cpuid = "11.5"
 uart_16550 = "0.3"
 x86_rtc = { version = "0.1", optional = true }

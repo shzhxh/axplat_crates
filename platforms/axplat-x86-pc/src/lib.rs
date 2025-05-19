@@ -11,7 +11,6 @@ extern crate axplat;
 mod apic;
 mod boot;
 mod console;
-mod dtables;
 mod init;
 mod mem;
 mod power;
@@ -36,17 +35,19 @@ unsafe extern "C" fn rust_entry(magic: usize, mbi: usize) {
     if magic == self::boot::MULTIBOOT_BOOTLOADER_MAGIC {
         axplat::mem::clear_bss();
         self::console::init();
-        self::dtables::init_primary();
+        let cpu_id = current_cpu_id();
+        axcpu::init::init_cpu(cpu_id);
         self::time::init_early();
         self::mem::init(mbi);
-        axplat::call_main(current_cpu_id(), 0);
+        axplat::call_main(cpu_id, 0);
     }
 }
 
 unsafe extern "C" fn rust_entry_secondary(magic: usize) {
     #[cfg(feature = "smp")]
     if magic == self::boot::MULTIBOOT_BOOTLOADER_MAGIC {
-        self::dtables::init_secondary();
-        axplat::call_secondary_main(current_cpu_id());
+        let cpu_id = current_cpu_id();
+        axcpu::init::init_cpu(cpu_id);
+        axplat::call_secondary_main(cpu_id);
     }
 }

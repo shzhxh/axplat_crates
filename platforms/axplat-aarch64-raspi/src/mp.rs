@@ -5,7 +5,7 @@ static mut SECONDARY_STACK_TOP: usize = 0;
 
 const CPU_SPIN_TABLE: [PhysAddr; 4] = [pa!(0xd8), pa!(0xe0), pa!(0xe8), pa!(0xf0)];
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn modify_stack_and_start() {
     core::arch::naked_asm!("
         ldr     x0, ={secondary_boot_stack}     // the secondary CPU hasn't set the TTBR1
@@ -26,13 +26,13 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
     // set the boot stack of the given secondary CPU
     let stack_top_ptr = &raw mut SECONDARY_STACK_TOP;
     unsafe { stack_top_ptr.write_volatile(stack_top.as_usize()) };
-    axhal_cpu::flush_dcache_line(va!(stack_top_ptr as usize));
+    axcpu::asm::flush_dcache_line(va!(stack_top_ptr as usize));
 
     // set the boot code address of the given secondary CPU
     let spintable_vaddr = phys_to_virt(CPU_SPIN_TABLE[cpu_id]);
     let release_ptr = spintable_vaddr.as_mut_ptr() as *mut usize;
     unsafe { release_ptr.write_volatile(entry_paddr) };
-    axhal_cpu::flush_dcache_line(spintable_vaddr);
+    axcpu::asm::flush_dcache_line(spintable_vaddr);
 
     aarch64_cpu::asm::sev();
 }

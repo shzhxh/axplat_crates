@@ -2,6 +2,8 @@
 
 #![allow(dead_code)]
 
+use core::sync::atomic::{AtomicBool, Ordering};
+
 const PSCI_0_2_FN_BASE: u32 = 0x84000000;
 const PSCI_0_2_64BIT: u32 = 0x40000000;
 const PSCI_0_2_FN_CPU_SUSPEND: u32 = PSCI_0_2_FN_BASE + 1;
@@ -14,7 +16,7 @@ const PSCI_0_2_FN64_CPU_SUSPEND: u32 = PSCI_0_2_FN_BASE + PSCI_0_2_64BIT + 1;
 const PSCI_0_2_FN64_CPU_ON: u32 = PSCI_0_2_FN_BASE + PSCI_0_2_64BIT + 3;
 const PSCI_0_2_FN64_MIGRATE: u32 = PSCI_0_2_FN_BASE + PSCI_0_2_64BIT + 5;
 
-static mut PSCI_METHOD_HVC: bool = false;
+static PSCI_METHOD_HVC: AtomicBool = AtomicBool::new(false);
 
 /// PSCI return values, inclusive of all PSCI versions.
 #[derive(PartialEq, Debug)]
@@ -81,7 +83,7 @@ fn psci_hvc_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> usize {
 }
 
 fn psci_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> Result<(), PsciError> {
-    let ret = if unsafe { PSCI_METHOD_HVC } {
+    let ret = if PSCI_METHOD_HVC.load(Ordering::Acquire) {
         psci_hvc_call(func, arg0, arg1, arg2)
     } else {
         arm_smccc_smc(func, arg0, arg1, arg2)
@@ -98,8 +100,8 @@ fn psci_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> Result<(), Psc
 /// Method should be either "smc" or "hvc".
 pub fn init(method: &str) {
     match method {
-        "smc" => unsafe { PSCI_METHOD_HVC = false },
-        "hvc" => unsafe { PSCI_METHOD_HVC = true },
+        "smc" => PSCI_METHOD_HVC.store(false, Ordering::Release),
+        "hvc" => PSCI_METHOD_HVC.store(true, Ordering::Release),
         _ => panic!("Unknown PSCI method: {}", method),
     }
 }
@@ -110,7 +112,7 @@ pub fn system_off() -> ! {
     psci_call(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0).ok();
     warn!("It should shutdown!");
     loop {
-        unsafe { core::arch::asm!("wfi") };
+        axcpu::asm::halt();
     }
 }
 

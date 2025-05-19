@@ -13,8 +13,17 @@ impl PowerIf for PowerImpl {
     /// Where `cpu_id` is the logical CPU ID (0, 1, ..., N-1, N is the number of
     /// CPU cores on the platform).
     fn cpu_boot(cpu_id: usize, stack_top_paddr: usize) {
-        #[cfg(feature = "smp")]
-        crate::mp::start_secondary_cpu(cpu_id, pa!(stack_top_paddr));
+        match () {
+            #[cfg(feature = "smp")]
+            () => crate::mp::start_secondary_cpu(cpu_id, pa!(stack_top_paddr)),
+            #[cfg(not(feature = "smp"))]
+            () => {
+                warn!(
+                    "feature `smp` is not enabled for crate `{}`!",
+                    env!("CARGO_CRATE_NAME")
+                );
+            }
+        }
     }
 
     /// Shutdown the whole system (in QEMU).
@@ -34,10 +43,10 @@ impl PowerIf for PowerImpl {
             unsafe { PortWriteOnly::new(0x604).write(0x2000u16) };
         }
 
-        axhal_cpu::halt();
+        axcpu::asm::halt();
         warn!("It should shutdown!");
         loop {
-            axhal_cpu::halt();
+            axcpu::asm::halt();
         }
     }
 }
