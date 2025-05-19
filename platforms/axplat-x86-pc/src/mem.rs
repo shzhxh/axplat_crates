@@ -1,6 +1,6 @@
 //! Physical memory information.
 
-use axhal_plat::mem::{MemIf, RawRange};
+use axplat::mem::{MemIf, RawRange};
 use heapless::Vec;
 use lazyinit::LazyInit;
 use memory_addr::{PhysAddr, VirtAddr};

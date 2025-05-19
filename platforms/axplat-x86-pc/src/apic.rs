@@ -102,7 +102,7 @@ pub fn init_secondary() {
 
 #[cfg(feature = "irq")]
 mod irq_impl {
-    use axhal_plat::irq::{HandlerTable, IrqHandler, IrqIf};
+    use axplat::irq::{HandlerTable, IrqHandler, IrqIf};
 
     /// The maximum number of IRQs.
     const MAX_IRQ_COUNT: usize = 256;

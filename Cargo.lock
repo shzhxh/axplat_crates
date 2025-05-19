@@ -133,24 +133,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "axhal_plat"
+name = "axplat"
 version = "0.1.0"
 dependencies = [
- "axhal_plat_macros",
+ "axplat-macros",
  "bitflags 2.6.0",
  "crate_interface",
  "handler_table",
  "memory_addr",
-]
-
-[[package]]
-name = "axhal_plat_macros"
-version = "0.1.0"
-dependencies = [
- "crate_interface",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -162,7 +152,7 @@ dependencies = [
  "arm_pl011",
  "arm_pl031",
  "axhal_cpu",
- "axhal_plat",
+ "axplat",
  "int_ratio",
  "kspin",
  "lazyinit",
@@ -178,7 +168,7 @@ version = "0.1.0"
 dependencies = [
  "axconfig-gen-macros",
  "axhal_cpu",
- "axhal_plat",
+ "axplat",
  "axplat-aarch64-common",
  "memory_addr",
  "page_table_entry",
@@ -191,7 +181,7 @@ dependencies = [
  "aarch64-cpu",
  "axconfig-gen-macros",
  "axhal_cpu",
- "axhal_plat",
+ "axplat",
  "axplat-aarch64-common",
  "log",
  "memory_addr",
@@ -207,12 +197,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "axplat-macros"
+version = "0.1.0"
+dependencies = [
+ "crate_interface",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "axplat-x86-pc"
 version = "0.1.0"
 dependencies = [
  "axconfig-gen-macros",
  "axhal_cpu",
- "axhal_plat",
+ "axplat",
  "bitflags 2.6.0",
  "heapless",
  "int_ratio",

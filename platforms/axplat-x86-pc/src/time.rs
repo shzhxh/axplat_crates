@@ -2,7 +2,7 @@
 //!
 //! Currently, the TSC is used as the clock source.
 
-use axhal_plat::time::TimeIf;
+use axplat::time::TimeIf;
 use raw_cpuid::CpuId;
 
 #[cfg(feature = "irq")]
@@ -30,7 +30,7 @@ pub fn init_early() {
         }
     }
 
-    axhal_plat::console_println!("TSC frequency: {} MHz", unsafe { CPU_FREQ_MHZ });
+    axplat::console_println!("TSC frequency: {} MHz", unsafe { CPU_FREQ_MHZ });
 
     unsafe {
         INIT_TICK = core::arch::x86_64::_rdtsc();
@@ -44,7 +44,7 @@ pub fn init_early() {
         // Subtract the timer ticks to get the actual time when ArceOS was booted.
         let eopch_time_nanos = Rtc::new().get_unix_timestamp() * 1_000_000_000;
         unsafe {
-            RTC_EPOCHOFFSET_NANOS = eopch_time_nanos - axhal_plat::time::ticks_to_nanos(INIT_TICK);
+            RTC_EPOCHOFFSET_NANOS = eopch_time_nanos - axplat::time::ticks_to_nanos(INIT_TICK);
         }
     }
 }
@@ -61,7 +61,7 @@ pub fn init_primary() {
         // TODO: calibrate with HPET
         NANOS_TO_LAPIC_TICKS_RATIO = Ratio::new(
             LAPIC_TICKS_PER_SEC as u32,
-            axhal_plat::time::NANOS_PER_SEC as u32,
+            axplat::time::NANOS_PER_SEC as u32,
         );
     }
 }

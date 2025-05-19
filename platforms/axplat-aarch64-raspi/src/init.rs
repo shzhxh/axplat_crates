@@ -1,4 +1,4 @@
-use axhal_plat::init::InitIf;
+use axplat::init::InitIf;
 
 #[cfg(feature = "irq")]
 use crate::config::devices::{GICC_PADDR, GICD_PADDR, TIMER_IRQ, UART_IRQ};
@@ -20,7 +20,7 @@ impl InitIf for InitIfImpl {
             axplat_aarch64_common::generic_timer::enable_irqs(TIMER_IRQ);
 
             // enable UART IRQs
-            axhal_plat::irq::register(UART_IRQ, axplat_aarch64_common::pl011::irq_handler);
+            axplat::irq::register(UART_IRQ, axplat_aarch64_common::pl011::irq_handler);
         }
     }
 

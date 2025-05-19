@@ -21,4 +21,4 @@ arm_pl011 = "0.1"
 arm_gicv2 = { version = "0.1" }
 arm_pl031 = { version = "0.2" }
 axhal_cpu = { version = "0.1", path = "../../axhal_cpu" }
-axhal_plat = { version = "0.1", path = "../../axhal_plat" }
+axplat = { version = "0.1", path = "../../axplat" }

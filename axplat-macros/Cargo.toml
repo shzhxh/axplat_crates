@@ -1,8 +1,8 @@
 [package]
-name = "axhal_plat_macros"
+name = "axplat-macros"
 version = "0.1.0"
 description = "Unified operations for various hardware platforms"
-documentation = "https://docs.rs/axhal_plat_macros"
+documentation = "https://docs.rs/axplat-macros"
 keywords = ["arceos", "hal", "hardware-abstraction-layer", "macros"]
 categories = ["development-tools::procedural-macro-helpers"]
 edition.workspace = true

@@ -158,7 +158,7 @@ pub type OverlapErr = (Range<usize>, Range<usize>);
 /// # Example
 ///
 /// ```rust
-/// # use axhal_plat::mem::check_sorted_ranges_overlap;
+/// # use axplat::mem::check_sorted_ranges_overlap;
 /// assert!(check_sorted_ranges_overlap([(0, 10), (10, 10)].into_iter()).is_ok());
 /// assert_eq!(
 ///     check_sorted_ranges_overlap([(0, 10), (5, 10)].into_iter()),
@@ -191,7 +191,7 @@ pub fn check_sorted_ranges_overlap(
 /// # Example
 ///
 /// ```rust
-/// # use axhal_plat::mem::ranges_difference;
+/// # use axplat::mem::ranges_difference;
 /// let mut res = Vec::new();
 /// // 0..10, 20..30 - 5..15, 15..25 = 0..5, 25..30
 /// ranges_difference(&[(0, 10), (20, 10)], &[(5, 10), (15, 10)], |r| res.push(r)).unwrap();

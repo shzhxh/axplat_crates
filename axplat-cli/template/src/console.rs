@@ -1,4 +1,4 @@
-use axhal_plat::console::ConsoleIf;
+use axplat::console::ConsoleIf;
 
 struct ConsoleIfImpl;
 

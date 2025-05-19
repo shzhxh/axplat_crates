@@ -6,7 +6,7 @@ extern crate log;
 #[macro_use]
 extern crate memory_addr;
 #[macro_use]
-extern crate axhal_plat;
+extern crate axplat;
 
 mod apic;
 mod boot;
@@ -34,12 +34,12 @@ fn current_cpu_id() -> usize {
 unsafe extern "C" fn rust_entry(magic: usize, mbi: usize) {
     // TODO: handle multiboot info
     if magic == self::boot::MULTIBOOT_BOOTLOADER_MAGIC {
-        axhal_plat::mem::clear_bss();
+        axplat::mem::clear_bss();
         self::console::init();
         self::dtables::init_primary();
         self::time::init_early();
         self::mem::init(mbi);
-        axhal_plat::call_main(current_cpu_id(), 0);
+        axplat::call_main(current_cpu_id(), 0);
     }
 }
 
@@ -47,6 +47,6 @@ unsafe extern "C" fn rust_entry_secondary(magic: usize) {
     #[cfg(feature = "smp")]
     if magic == self::boot::MULTIBOOT_BOOTLOADER_MAGIC {
         self::dtables::init_secondary();
-        axhal_plat::call_secondary_main(current_cpu_id());
+        axplat::call_secondary_main(current_cpu_id());
     }
 }

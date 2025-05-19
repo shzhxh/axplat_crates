@@ -1,7 +1,7 @@
 #![no_std]
 
 #[macro_use]
-extern crate axhal_plat;
+extern crate axplat;
 
 mod console;
 mod init;
@@ -17,5 +17,5 @@ mod config {
 #[unsafe(no_mangle)]
 unsafe extern "C" fn _start() -> ! {
     // TODO: Implement actual bootstrap logic
-    axhal_plat::call_main(0, 0);
+    axplat::call_main(0, 0);
 }

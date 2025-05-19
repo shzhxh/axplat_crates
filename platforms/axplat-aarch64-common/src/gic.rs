@@ -1,7 +1,7 @@
 //! ARM Generic Interrupt Controller (GIC).
 
 use arm_gicv2::{GicCpuInterface, GicDistributor};
-use axhal_plat::irq::{HandlerTable, IrqHandler};
+use axplat::irq::{HandlerTable, IrqHandler};
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::VirtAddr;
@@ -75,14 +75,14 @@ pub fn init_gicc() {
     GICC.init();
 }
 
-/// Default implementation of [`axhal_plat::irq::IrqIf`] using the GIC.
+/// Default implementation of [`axplat::irq::IrqIf`] using the GIC.
 #[macro_export]
 macro_rules! irq_if_impl {
     ($name:ident) => {
         struct $name;
 
         #[impl_plat_interface]
-        impl axhal_plat::irq::IrqIf for $name {
+        impl axplat::irq::IrqIf for $name {
             /// Enables or disables the given IRQ.
             fn set_enable(irq: usize, enabled: bool) {
                 $crate::gic::set_enable(irq, enabled);
@@ -92,7 +92,7 @@ macro_rules! irq_if_impl {
             ///
             /// It also enables the IRQ if the registration succeeds. It returns `false`
             /// if the registration failed.
-            fn register(irq: usize, handler: axhal_plat::irq::IrqHandler) -> bool {
+            fn register(irq: usize, handler: axplat::irq::IrqHandler) -> bool {
                 $crate::gic::register_handler(irq, handler)
             }
 
@@ -100,7 +100,7 @@ macro_rules! irq_if_impl {
             ///
             /// It also disables the IRQ if the unregistration succeeds. It returns the
             /// existing handler if it is registered, `None` otherwise.
-            fn unregister(irq: usize) -> Option<axhal_plat::irq::IrqHandler> {
+            fn unregister(irq: usize) -> Option<axplat::irq::IrqHandler> {
                 $crate::gic::unregister_handler(irq)
             }
 

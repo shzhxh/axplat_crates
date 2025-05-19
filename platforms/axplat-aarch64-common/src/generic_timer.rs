@@ -44,7 +44,7 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
 pub fn init_early() {
     let freq = CNTFRQ_EL0.get();
     unsafe {
-        CNTPCT_TO_NANOS_RATIO = Ratio::new(axhal_plat::time::NANOS_PER_SEC as u32, freq as u32);
+        CNTPCT_TO_NANOS_RATIO = Ratio::new(axplat::time::NANOS_PER_SEC as u32, freq as u32);
         NANOS_TO_CNTPCT_RATIO = CNTPCT_TO_NANOS_RATIO.inverse();
     }
 }
@@ -59,7 +59,7 @@ pub fn enable_irqs(timer_irq_num: usize) {
     crate::gic::set_enable(timer_irq_num, true);
 }
 
-/// Default implementation of [`axhal_plat::time::TimeIf`] using the generic
+/// Default implementation of [`axplat::time::TimeIf`] using the generic
 /// timer.
 #[macro_export]
 macro_rules! time_if_impl {
@@ -67,7 +67,7 @@ macro_rules! time_if_impl {
         struct $name;
 
         #[impl_plat_interface]
-        impl axhal_plat::time::TimeIf for $name {
+        impl axplat::time::TimeIf for $name {
             /// Returns the current clock time in hardware ticks.
             fn current_ticks() -> u64 {
                 $crate::generic_timer::current_ticks()

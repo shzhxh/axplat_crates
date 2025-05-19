@@ -2,7 +2,7 @@
 #![feature(naked_functions)]
 
 #[macro_use]
-extern crate axhal_plat;
+extern crate axplat;
 
 #[macro_use]
 extern crate memory_addr;
@@ -32,7 +32,7 @@ unsafe extern "C" {
 }
 
 unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
-    axhal_plat::mem::clear_bss();
+    axplat::mem::clear_bss();
     axhal_cpu::set_exception_vector_base(exception_vector_base as usize);
     axhal_cpu::write_page_table_root0(0.into()); // disable low address access
     axplat_aarch64_common::psci::init(PSCI_METHOD);
@@ -40,12 +40,12 @@ unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     axplat_aarch64_common::generic_timer::init_early();
     #[cfg(feature = "rtc")]
     axplat_aarch64_common::pl031::init_early(phys_to_virt(pa!(RTC_PADDR)));
-    axhal_plat::call_main(cpu_id, dtb);
+    axplat::call_main(cpu_id, dtb);
 }
 
 #[cfg(feature = "smp")]
 unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
     axhal_cpu::set_exception_vector_base(exception_vector_base as usize);
     axhal_cpu::write_page_table_root0(0.into()); // disable low address access
-    axhal_plat::call_secondary_main(cpu_id);
+    axplat::call_secondary_main(cpu_id);
 }

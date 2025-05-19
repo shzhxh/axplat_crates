@@ -1,4 +1,4 @@
-use axhal_plat::mem::{MemIf, RawRange};
+use axplat::mem::{MemIf, RawRange};
 
 struct MemIfImpl;
 

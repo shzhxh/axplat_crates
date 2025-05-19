@@ -1,6 +1,6 @@
 //! Multi-processor booting.
 
-use axhal_plat::time::{busy_wait, Duration};
+use axplat::time::{busy_wait, Duration};
 use memory_addr::{PhysAddr, PAGE_SIZE_4K};
 
 const START_PAGE_IDX: u8 = 6;

@@ -1,4 +1,4 @@
-use axhal_plat::time::TimeIf;
+use axplat::time::TimeIf;
 
 struct TimeIfImpl;
 

@@ -1,4 +1,4 @@
-use axhal_plat::init::InitIf;
+use axplat::init::InitIf;
 
 struct InitIfImpl;
 

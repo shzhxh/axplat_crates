@@ -1,4 +1,4 @@
-use axhal_plat::power::PowerIf;
+use axplat::power::PowerIf;
 
 struct PowerImpl;
 

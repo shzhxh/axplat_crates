@@ -67,15 +67,15 @@ pub fn irq_handler() {
     }
 }
 
-/// Default implementation of [`axhal_plat::console::ConsoleIf`] using the
+/// Default implementation of [`axplat::console::ConsoleIf`] using the
 /// PL011 UART.
 #[macro_export]
 macro_rules! console_if_impl {
     ($name:ident) => {
         struct $name;
 
-        #[axhal_plat::impl_plat_interface]
-        impl axhal_plat::console::ConsoleIf for $name {
+        #[axplat::impl_plat_interface]
+        impl axplat::console::ConsoleIf for $name {
             /// Writes given bytes to the console.
             fn write_bytes(bytes: &[u8]) {
                 $crate::pl011::write_bytes(bytes);
