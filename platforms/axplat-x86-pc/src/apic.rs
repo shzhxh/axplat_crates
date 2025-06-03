@@ -40,11 +40,13 @@ pub fn set_enable(vector: usize, enabled: bool) {
     }
 }
 
+#[cfg(any(feature = "smp", feature = "irq"))]
 pub fn local_apic<'a>() -> &'a mut LocalApic {
     // It's safe as `LOCAL_APIC` is initialized in `init_primary`.
     unsafe { LOCAL_APIC.get().as_mut().unwrap().assume_init_mut() }
 }
 
+#[cfg(feature = "smp")]
 pub fn raw_apic_id(id_u8: u8) -> u32 {
     if unsafe { IS_X2APIC } {
         id_u8 as u32

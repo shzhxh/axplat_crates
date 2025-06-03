@@ -12,7 +12,7 @@ fn get_files_recursively(dir: &Path, prefix: String) -> io::Result<Vec<String>> 
         let full_name = if prefix.is_empty() {
             path_name.into()
         } else {
-            format!("{}/{}", prefix, path_name)
+            format!("{prefix}/{path_name}")
         };
         if path.is_dir() {
             files.extend(get_files_recursively(&path, full_name)?);
@@ -34,8 +34,7 @@ fn main() -> io::Result<()> {
     for file in files {
         writeln!(
             f,
-            "    (\"{}\", include_str!(\"../{}/{}\")),",
-            file, TEMPLATE_DIR, file
+            "    (\"{file}\", include_str!(\"../{TEMPLATE_DIR}/{file}\")),",
         )?;
     }
     writeln!(f, "];")?;

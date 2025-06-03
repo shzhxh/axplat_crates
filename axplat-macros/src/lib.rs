@@ -45,16 +45,17 @@ fn common_main(item: TokenStream, arg_num: usize, export_name: &str, err_msg: &s
 /// Marks a function to be called on the primary core after the platform
 /// initialization.
 ///
-/// The function signature must be `fn(cpu_id: usize, dtb: usize) -> !`, where
+/// The function signature must be `fn(cpu_id: usize, arg: usize) -> !`, where
 /// `cpu_id` is the logical CPU ID (0, 1, ..., N-1, N is the number of CPU
-/// cores on the platform).
+/// cores on the platform), and `arg` is passed from the bootloader (typically
+/// the device tree blob address).
 ///
 /// # Example
 ///
 /// ```rust
 /// # use axplat_macros as axplat;
 /// #[axplat::main]
-/// fn primary_main(cpu_id: usize, dtb: usize) -> ! {
+/// fn primary_main(cpu_id: usize, arg: usize) -> ! {
 ///     todo!() // Your code here
 /// }
 #[proc_macro_attribute]
@@ -69,7 +70,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         item,
         2,
         "__axplat_main",
-        "expect a function with type `fn(cpu_id: usize, dtb: usize) -> !`",
+        "expect a function with type `fn(cpu_id: usize, arg: usize) -> !`",
     )
 }
 

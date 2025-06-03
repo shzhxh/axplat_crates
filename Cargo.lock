@@ -118,7 +118,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axcpu.git#14bf1b29da6fa06d3512fc3402432e8d70b908c4"
+source = "git+https://github.com/arceos-org/axcpu.git#506f64dc092de98ef370542efb55b2002d6b336b"
 dependencies = [
  "aarch64-cpu",
  "cfg-if",
@@ -174,6 +174,7 @@ dependencies = [
  "axcpu",
  "axplat",
  "axplat-aarch64-common",
+ "log",
  "memory_addr",
  "page_table_entry",
 ]

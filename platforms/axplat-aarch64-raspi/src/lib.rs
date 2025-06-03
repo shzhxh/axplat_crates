@@ -23,20 +23,3 @@ axplat_aarch64_common::time_if_impl!(TimeIfImpl);
 
 #[cfg(feature = "irq")]
 axplat_aarch64_common::irq_if_impl!(IrqIfImpl);
-
-use self::config::devices::UART_PADDR;
-use self::mem::phys_to_virt;
-
-unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
-    axplat::mem::clear_bss();
-    axcpu::init::init_cpu(cpu_id);
-    axplat_aarch64_common::pl011::init_early(phys_to_virt(pa!(UART_PADDR)));
-    axplat_aarch64_common::generic_timer::init_early();
-    axplat::call_main(cpu_id, dtb);
-}
-
-#[cfg(feature = "smp")]
-unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
-    axcpu::init::init_cpu(cpu_id);
-    axplat::call_secondary_main(cpu_id);
-}

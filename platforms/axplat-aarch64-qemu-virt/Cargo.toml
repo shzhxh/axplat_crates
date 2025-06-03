@@ -15,6 +15,7 @@ rtc = []
 smp = []
 
 [dependencies]
+log = "0.4"
 memory_addr = "0.3"
 page_table_entry = "0.5"
 axconfig-gen-macros = "0.1"

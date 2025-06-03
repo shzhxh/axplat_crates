@@ -1,14 +1,36 @@
 use axplat::init::InitIf;
 
+use crate::config::devices::UART_PADDR;
 #[cfg(feature = "irq")]
 use crate::config::devices::{GICC_PADDR, GICD_PADDR, TIMER_IRQ, UART_IRQ};
+use crate::mem::phys_to_virt;
 
 struct InitIfImpl;
 
 #[impl_plat_interface]
 impl InitIf for InitIfImpl {
-    /// Initializes the platform devices for the primary core.
-    fn platform_init() {
+    /// Initializes the platform at the early stage for the primary core.
+    ///
+    /// This function should be called immediately after the kernel has booted,
+    /// and performed earliest platform configuration and initialization (e.g.,
+    /// early console, clocking).
+    fn init_early(cpu_id: usize, _dtb: usize) {
+        axcpu::init::init_cpu(cpu_id);
+        axplat_aarch64_common::pl011::init_early(phys_to_virt(pa!(UART_PADDR)));
+        axplat_aarch64_common::generic_timer::init_early();
+    }
+
+    /// Initializes the platform at the early stage for secondary cores.
+    fn init_early_secondary(cpu_id: usize) {
+        axcpu::init::init_cpu(cpu_id);
+    }
+
+    /// Initializes the platform at the later stage for the primary core.
+    ///
+    /// This function should be called after the kernel has done part of its
+    /// initialization (e.g, logging, memory management), and finalized the rest of
+    /// platform configuration and initialization.
+    fn init_later(_cpu_id: usize, _dtb: usize) {
         #[cfg(feature = "irq")]
         {
             use crate::mem::phys_to_virt;
@@ -24,8 +46,8 @@ impl InitIf for InitIfImpl {
         }
     }
 
-    /// Initializes the platform devices for secondary cores.
-    fn platform_init_secondary() {
+    /// Initializes the platform at the later stage for secondary cores.
+    fn init_later_secondary(_cpu_id: usize) {
         #[cfg(all(feature = "smp", feature = "irq"))]
         {
             axplat_aarch64_common::gic::init_gicc();

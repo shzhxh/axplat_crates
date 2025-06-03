@@ -18,6 +18,7 @@ impl PowerIf for PowerImpl {
             () => crate::mp::start_secondary_cpu(cpu_id, pa!(stack_top_paddr)),
             #[cfg(not(feature = "smp"))]
             () => {
+                let _ = (cpu_id, stack_top_paddr);
                 warn!(
                     "feature `smp` is not enabled for crate `{}`!",
                     env!("CARGO_CRATE_NAME")

@@ -118,5 +118,7 @@ impl TimeIf for TimeIfImpl {
                 }
             }
         }
+        #[cfg(not(feature = "irq"))]
+        let _ = deadline_ns;
     }
 }

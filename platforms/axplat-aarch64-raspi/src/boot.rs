@@ -72,7 +72,7 @@ unsafe extern "C" fn _start() -> ! {
         mov     x8, {phys_virt_offset}  // set SP to the high address
         add     sp, sp, x8
 
-        mov     x0, x19                 // call rust_entry(cpu_id, dtb)
+        mov     x0, x19                 // call_main(cpu_id, dtb)
         mov     x1, x20
         ldr     x8, ={entry}
         blr     x8
@@ -85,7 +85,7 @@ unsafe extern "C" fn _start() -> ! {
         boot_stack = sym BOOT_STACK,
         boot_stack_size = const BOOT_STACK_SIZE,
         phys_virt_offset = const PHYS_VIRT_OFFSET,
-        entry = sym crate::rust_entry,
+        entry = sym axplat::call_main,
     )
 }
 
@@ -108,7 +108,7 @@ pub(crate) unsafe extern "C" fn _start_secondary() -> ! {
         mov     x8, {phys_virt_offset}  // set SP to the high address
         add     sp, sp, x8
 
-        mov     x0, x19                 // call rust_entry_secondary(cpu_id)
+        mov     x0, x19                 // call_secondary_main(cpu_id)
         ldr     x8, ={entry}
         blr     x8
         b      .",
@@ -117,6 +117,6 @@ pub(crate) unsafe extern "C" fn _start_secondary() -> ! {
         enable_fp = sym enable_fp,
         boot_pt = sym BOOT_PT_L0,
         phys_virt_offset = const PHYS_VIRT_OFFSET,
-        entry = sym crate::rust_entry_secondary,
+        entry = sym axplat::call_secondary_main,
     )
 }
