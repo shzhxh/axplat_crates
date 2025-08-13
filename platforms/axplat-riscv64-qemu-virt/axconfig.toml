@@ -82,3 +82,5 @@ ipi-irq = "0x8000_0000_0000_0001"   # uint
 # };
 # RTC (goldfish) Address
 rtc-paddr = 0x10_1000               # uint
+
+plic-base = 0x0c00_0000             # uint

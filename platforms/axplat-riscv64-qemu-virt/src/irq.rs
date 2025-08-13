@@ -1,7 +1,13 @@
 //! TODO: PLIC
 
-use axplat::irq::{HandlerTable, IpiTarget, IrqHandler, IrqIf};
+use crate::config::{devices::PLIC_BASE, plat::CPU_NUM};
+use axplat::{
+    irq::{HandlerTable, IpiTarget, IrqHandler, IrqIf},
+    mem::phys_to_virt,
+};
 use core::sync::atomic::{AtomicPtr, Ordering};
+use lazyinit::LazyInit;
+use plic::{Mode, PLIC};
 use riscv::register::sie;
 use sbi_rt::HartMask;
 
@@ -26,6 +32,16 @@ static IPI_HANDLER: AtomicPtr<()> = AtomicPtr::new(core::ptr::null_mut());
 pub const MAX_IRQ_COUNT: usize = 1024;
 
 static IRQ_HANDLER_TABLE: HandlerTable<MAX_IRQ_COUNT> = HandlerTable::new();
+
+static PLIC: LazyInit<PLIC<CPU_NUM>> = LazyInit::new();
+
+fn init_plic() -> PLIC<CPU_NUM> {
+    let plic = PLIC::new(phys_to_virt(PLIC_BASE.into()).as_usize(), [2; CPU_NUM]);
+    for hart in 0..(CPU_NUM as u32) {
+        plic.set_threshold(hart, Mode::Supervisor, 0);
+    }
+    plic
+}
 
 macro_rules! with_cause {
     ($cause: expr, @S_TIMER => $timer_op: expr, @S_SOFT => $ipi_op: expr, @S_EXT => $ext_op: expr, @EX_IRQ => $plic_op: expr $(,)?) => {
@@ -60,9 +76,35 @@ struct IrqIfImpl;
 #[impl_plat_interface]
 impl IrqIf for IrqIfImpl {
     /// Enables or disables the given IRQ.
-    fn set_enable(irq: usize, _enabled: bool) {
-        // TODO: set enable in PLIC
-        warn!("set_enable is not implemented for IRQ {}", irq);
+    fn set_enable(irq: usize, enabled: bool) {
+        with_cause!(
+            irq,
+            @S_TIMER => {
+                unsafe {
+                    if enabled {
+                        sie::set_stimer();
+                    } else {
+                        sie::clear_stimer();
+                    }
+                }
+            },
+            @S_SOFT => {},
+            @S_EXT => {},
+            @EX_IRQ => {
+                PLIC.call_once(init_plic);
+                let plic = &PLIC;
+                if enabled {
+                    plic.set_priority(irq as _, 6);
+                    for hart in 0..(CPU_NUM as u32) {
+                        plic.enable(hart, Mode::Supervisor, irq as _);
+                    }
+                } else {
+                    for hart in 0..(CPU_NUM as u32) {
+                        plic.disable(hart, Mode::Supervisor, irq as _);
+                    }
+                }
+            }
+        );
     }
 
     /// Registers an IRQ handler for the given IRQ.
@@ -92,7 +134,6 @@ impl IrqIf for IrqIfImpl {
                     Self::set_enable(irq, true);
                     true
                 } else {
-                    warn!("register handler for External IRQ {} failed", irq);
                     false
                 }
             }
@@ -143,7 +184,7 @@ impl IrqIf for IrqIfImpl {
                 let handler = TIMER_HANDLER.load(Ordering::Acquire);
                 if !handler.is_null() {
                     // SAFETY: The handler is guaranteed to be a valid function pointer.
-                    unsafe { core::mem::transmute::<*mut (), IrqHandler>(handler)() };
+                    unsafe { core::mem::transmute::<*mut (), IrqHandler>(handler)(irq) };
                 }
             },
             @S_SOFT => {
@@ -151,14 +192,19 @@ impl IrqIf for IrqIfImpl {
                 let handler = IPI_HANDLER.load(Ordering::Acquire);
                 if !handler.is_null() {
                     // SAFETY: The handler is guaranteed to be a valid function pointer.
-                    unsafe { core::mem::transmute::<*mut (), IrqHandler>(handler)() };
+                    unsafe { core::mem::transmute::<*mut (), IrqHandler>(handler)(irq) };
                 }
             },
             @S_EXT => {
-                // TODO: get IRQ number from PLIC
-                if !IRQ_HANDLER_TABLE.handle(0) {
-                    warn!("Unhandled IRQ {}", 0);
+                if !PLIC.is_inited() {
+                    return;
                 }
+                // TODO: hart
+                let irq = PLIC.claim(0, Mode::Supervisor);
+                if !IRQ_HANDLER_TABLE.handle(irq as _) {
+                    warn!("Unhandled IRQ {}", irq);
+                }
+                PLIC.complete(0, Mode::Supervisor, irq);
             },
             @EX_IRQ => {
                 unreachable!("Device-side IRQs should be handled by triggering the External Interrupt.");
