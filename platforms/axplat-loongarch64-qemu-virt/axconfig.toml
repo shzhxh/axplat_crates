@@ -15,17 +15,21 @@ cpu-num = 1                           # uint
 phys-memory-base = 0x8000_0000        # uint
 # Size of the whole physical memory. (128M)
 phys-memory-size = 0x800_0000         # uint
-# Base physical address of the kernel image.
-kernel-base-paddr = 0x8000_0000       # uint
+# Size of the low RAM area. (256M)
+lowram-size = 0x1000_0000             # uint
 
-# Base virtual address of the kernel image.
-kernel-base-vaddr = "0xffff_8000_8000_0000"     # uint
-# Linear mapping offset, for quick conversions between physical and virtual
-# addresses.
+# Linear mapping offset for booting region.
+boot-virt-offset = "0x9000_0000_0000_0000"      # uint
+# Linear mapping offset for physical region.
 phys-virt-offset = "0xffff_8000_0000_0000"      # uint
 # Offset of bus address and phys address. some boards, the bus address is
 # different from the physical address.
 phys-bus-offset = 0                             # uint
+
+# Base physical address of the kernel image.
+kernel-base-paddr = 0x8000_0000                 # uint
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0xffff_8000_8000_0000"     # uint
 # Kernel address space base.
 kernel-aspace-base = "0xffff_8000_0000_0000"    # uint
 # Kernel address space size.
