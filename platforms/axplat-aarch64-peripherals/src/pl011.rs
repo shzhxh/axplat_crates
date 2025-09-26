@@ -57,7 +57,7 @@ pub fn init_early(uart_base: VirtAddr) {
 }
 
 /// UART IRQ Handler
-pub fn irq_handler() {
+pub fn irq_handler(_irq: usize) {
     let is_receive_interrupt = UART.lock().is_receive_interrupt();
     UART.lock().ack_interrupts();
     if is_receive_interrupt {
