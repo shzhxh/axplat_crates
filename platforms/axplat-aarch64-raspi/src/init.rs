@@ -40,8 +40,7 @@ impl InitIf for InitIfImpl {
             axplat_aarch64_peripherals::gic::init_gicc();
             axplat_aarch64_peripherals::generic_timer::enable_irqs(TIMER_IRQ);
 
-            // enable UART IRQs
-            axplat::irq::register(UART_IRQ, axplat_aarch64_peripherals::pl011::irq_handler);
+            axplat::console::init_console_irq(UART_IRQ);
         }
     }
 

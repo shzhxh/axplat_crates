@@ -81,7 +81,7 @@ ged-paddr  = 0x100E001C                 # uint
 #     compatible = "ns16550a";
 # };
 uart-paddr = 0x1FE001E0                 # uint
-uart-interrupt = 2
+uart-irq = 2
 
 # Timer interrupt frequency in Hz.
 timer-frequency = 100_000_000           # uint
@@ -91,5 +91,5 @@ timer-irq = 11                          # uint
 # RTC (ls7a) Address
 rtc-paddr = 0x100d_0100                 # uint
 
-platic-interrupt = 3
 platic-paddr = 0x10000000
+platic-irq = 3

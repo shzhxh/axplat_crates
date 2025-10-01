@@ -37,13 +37,7 @@ pub fn init_early() {
 #[cfg(feature = "irq")]
 pub fn init_irq() {
     UART.lock().set_ier(true);
-    axplat_aarch64_peripherals::gic::register_handler(crate::config::devices::UART_IRQ, handle);
-}
-
-/// UART IRQ Handler
-#[allow(dead_code)]
-pub fn handle() {
-    trace!("Uart IRQ Handler");
+    axplat::console::init_console_irq(crate::config::devices::UART_IRQ);
 }
 
 struct ConsoleIfImpl;

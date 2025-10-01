@@ -26,7 +26,10 @@ impl InitIf for InitIfImpl {
     /// platform configuration and initialization.
     fn init_later(_cpu_id: usize, _arg: usize) {
         #[cfg(feature = "irq")]
-        crate::irq::init();
+        {
+            crate::irq::init();
+            axplat::console::init_console_irq(crate::config::devices::UART_IRQ);
+        }
         crate::time::init_percpu();
     }
 

@@ -4,7 +4,7 @@ use loongArch64::register::{
     ticlr,
 };
 
-use crate::config::devices::{PLATIC_INTERRUPT, TIMER_IRQ};
+use crate::config::devices::{PLATIC_IRQ, TIMER_IRQ};
 
 mod eiointc;
 mod platic;
@@ -69,7 +69,7 @@ impl IrqIf for IrqIfImpl {
     fn handle(irq: usize) {
         if irq == crate::config::devices::TIMER_IRQ {
             ticlr::clear_timer_interrupt();
-        } else if irq == PLATIC_INTERRUPT {
+        } else if irq == PLATIC_IRQ {
             if let Some(irq) = eiointc::claim_irq() {
                 IRQ_HANDLER_TABLE.handle(irq);
                 eiointc::complete_irq(irq);

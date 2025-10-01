@@ -26,12 +26,11 @@ pub fn set_enable(irq_num: usize, enabled: bool) {
 /// It also enables the IRQ if the registration succeeds. It returns `false`
 /// if the registration failed.
 pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
-    trace!("register handler IRQ {}", irq_num);
     if IRQ_HANDLER_TABLE.register_handler(irq_num, handler) {
+        trace!("register handler IRQ {}", irq_num);
         set_enable(irq_num, true);
         return true;
     }
-    warn!("register handler for IRQ {} failed", irq_num);
     false
 }
 
@@ -56,7 +55,7 @@ pub fn handle_irq(_unused: usize) {
         return;
     }
 
-    debug!("Handling IRQ: {ack:?}");
+    trace!("Handling IRQ: {ack:?}");
 
     let irq_num = match ack {
         Ack::Other(intid) => intid,

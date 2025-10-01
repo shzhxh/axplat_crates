@@ -52,19 +52,11 @@ pub fn read_bytes(bytes: &mut [u8]) -> usize {
 
 /// Early stage initialization of the PL011 UART driver.
 pub fn init_early(uart_base: VirtAddr) {
-    UART.init_once(SpinNoIrq::new(Pl011Uart::new(uart_base.as_mut_ptr())));
-    UART.lock().init();
-}
-
-/// UART IRQ Handler
-pub fn irq_handler(_irq: usize) {
-    let is_receive_interrupt = UART.lock().is_receive_interrupt();
-    UART.lock().ack_interrupts();
-    if is_receive_interrupt {
-        while let Some(c) = getchar() {
-            putchar(c);
-        }
-    }
+    UART.init_once(SpinNoIrq::new({
+        let mut uart = Pl011Uart::new(uart_base.as_mut_ptr());
+        uart.init();
+        uart
+    }));
 }
 
 /// Default implementation of [`axplat::console::ConsoleIf`] using the

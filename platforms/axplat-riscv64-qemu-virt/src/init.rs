@@ -29,6 +29,7 @@ impl InitIf for InitIfImpl {
         {
             crate::irq::init();
             crate::irq::init_percpu();
+            axplat::console::init_console_irq(crate::config::devices::UART_IRQ);
         }
         crate::time::init_percpu();
     }

@@ -53,12 +53,15 @@ pub fn __simple_print(fmt: Arguments) {
     drop(_guard);
 }
 
+#[cfg(feature = "irq")]
 static CONSOLE_IRQ: AtomicUsize = AtomicUsize::new(0);
 
+#[cfg(feature = "irq")]
 pub fn init_console_irq(irq: usize) {
     CONSOLE_IRQ.store(irq, Ordering::SeqCst);
 }
 
+#[cfg(feature = "irq")]
 pub fn get_console_irq() -> Option<usize> {
     let irq = CONSOLE_IRQ.load(Ordering::SeqCst);
     if irq != 0 { Some(irq) } else { None }
