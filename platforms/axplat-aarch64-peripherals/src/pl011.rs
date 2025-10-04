@@ -79,6 +79,13 @@ macro_rules! console_if_impl {
             fn read_bytes(bytes: &mut [u8]) -> usize {
                 $crate::pl011::read_bytes(bytes)
             }
+
+            /// Returns the IRQ number for the console, if applicable.
+            #[cfg(feature = "irq")]
+            fn irq_number() -> Option<u32> {
+                // Note that `crate` is not `$crate`!
+                Some(crate::config::devices::UART_IRQ as _)
+            }
         }
     };
 }

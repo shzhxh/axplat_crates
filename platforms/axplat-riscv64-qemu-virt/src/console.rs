@@ -50,4 +50,10 @@ impl ConsoleIf for ConsoleIfImpl {
         }
         bytes.len()
     }
+
+    /// Returns the IRQ number for the console, if applicable.
+    #[cfg(feature = "irq")]
+    fn irq_number() -> Option<u32> {
+        Some(crate::config::devices::UART_IRQ as _)
+    }
 }

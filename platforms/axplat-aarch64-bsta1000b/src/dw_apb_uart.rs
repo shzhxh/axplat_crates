@@ -37,7 +37,6 @@ pub fn init_early() {
 #[cfg(feature = "irq")]
 pub fn init_irq() {
     UART.lock().set_ier(true);
-    axplat::console::init_console_irq(crate::config::devices::UART_IRQ);
 }
 
 struct ConsoleIfImpl;
@@ -64,5 +63,11 @@ impl ConsoleIf for ConsoleIfImpl {
             read_len += 1;
         }
         read_len
+    }
+
+    /// Returns the IRQ number for the console, if applicable.
+    #[cfg(feature = "irq")]
+    fn irq_number() -> Option<u32> {
+        Some(crate::config::devices::UART_IRQ as _)
     }
 }

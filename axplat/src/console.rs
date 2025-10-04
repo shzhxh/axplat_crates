@@ -1,9 +1,6 @@
 //! Console input and output.
 
-use core::{
-    fmt::{Arguments, Result, Write},
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use core::fmt::{Arguments, Result, Write};
 
 /// Console input and output interface.
 #[def_plat_interface]
@@ -15,6 +12,12 @@ pub trait ConsoleIf {
     ///
     /// Returns the number of bytes read.
     fn read_bytes(bytes: &mut [u8]) -> usize;
+
+    /// Returns the IRQ number for the console, if applicable.
+    #[cfg(feature = "irq")]
+    fn irq_number() -> Option<u32> {
+        None
+    }
 }
 
 struct EarlyConsole;
@@ -51,18 +54,4 @@ pub fn __simple_print(fmt: Arguments) {
     let _guard = CONSOLE_LOCK.lock();
     EarlyConsole.write_fmt(fmt).unwrap();
     drop(_guard);
-}
-
-#[cfg(feature = "irq")]
-static CONSOLE_IRQ: AtomicUsize = AtomicUsize::new(0);
-
-#[cfg(feature = "irq")]
-pub fn init_console_irq(irq: usize) {
-    CONSOLE_IRQ.store(irq, Ordering::SeqCst);
-}
-
-#[cfg(feature = "irq")]
-pub fn get_console_irq() -> Option<usize> {
-    let irq = CONSOLE_IRQ.load(Ordering::SeqCst);
-    if irq != 0 { Some(irq) } else { None }
 }
