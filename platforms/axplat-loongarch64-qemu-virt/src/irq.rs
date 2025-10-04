@@ -32,14 +32,12 @@ impl IrqIf for IrqIfImpl {
                 false => old_value & !LineBasedInterrupt::TIMER,
             };
             ecfg::set_lie(new_value);
+        } else if enabled {
+            eiointc::enable_irq(irq_num);
+            platic::enable_irq(irq_num);
         } else {
-            if enabled {
-                eiointc::enable_irq(irq_num);
-                platic::enable_irq(irq_num);
-            } else {
-                eiointc::disable_irq(irq_num);
-                platic::disable_irq(irq_num);
-            }
+            eiointc::disable_irq(irq_num);
+            platic::disable_irq(irq_num);
         }
     }
 
@@ -76,9 +74,9 @@ impl IrqIf for IrqIfImpl {
             }
             return;
         }
-        trace!("IRQ {}", irq);
+        trace!("IRQ {irq}");
         if !IRQ_HANDLER_TABLE.handle(irq) {
-            warn!("Unhandled IRQ {}", irq);
+            warn!("Unhandled IRQ {irq}");
         }
     }
 

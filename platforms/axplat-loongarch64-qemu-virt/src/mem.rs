@@ -2,7 +2,8 @@ use axplat::mem::{MemIf, PhysAddr, RawRange, VirtAddr, pa, va};
 
 use crate::config::devices::MMIO_RANGES;
 use crate::config::plat::{
-    BOOT_VIRT_OFFSET, LOWRAM_SIZE, PHYS_MEMORY_BASE, PHYS_MEMORY_SIZE, PHYS_VIRT_OFFSET,
+    HIGH_MEMORY_BASE, LOW_MEMORY_BASE, LOW_MEMORY_SIZE, PHYS_BOOT_OFFSET, PHYS_MEMORY_SIZE,
+    PHYS_VIRT_OFFSET,
 };
 
 struct MemIfImpl;
@@ -14,12 +15,14 @@ impl MemIf for MemIfImpl {
     /// All memory ranges except reserved ranges (including the kernel loaded
     /// range) are free for allocation.
     fn phys_ram_ranges() -> &'static [RawRange] {
-        if PHYS_MEMORY_SIZE <= LOWRAM_SIZE {
-            &[(0, PHYS_MEMORY_SIZE)]
+        const HIGH_MEMORY_SIZE: usize = PHYS_MEMORY_SIZE.saturating_sub(LOW_MEMORY_SIZE);
+
+        if HIGH_MEMORY_SIZE == 0 {
+            &[(LOW_MEMORY_BASE, PHYS_MEMORY_SIZE)]
         } else {
             &[
-                (0, LOWRAM_SIZE),
-                (PHYS_MEMORY_BASE, PHYS_MEMORY_SIZE - LOWRAM_SIZE),
+                (LOW_MEMORY_BASE, LOW_MEMORY_SIZE),
+                (HIGH_MEMORY_BASE, HIGH_MEMORY_SIZE),
             ]
         }
     }
@@ -32,7 +35,7 @@ impl MemIf for MemIfImpl {
     /// Note that the ranges returned should not include the range where the
     /// kernel is loaded.
     fn reserved_phys_ram_ranges() -> &'static [RawRange] {
-        &[]
+        &[(0, 0x200000)] // boot_info + fdt
     }
 
     /// Returns all device memory (MMIO) ranges on the platform.
@@ -48,8 +51,8 @@ impl MemIf for MemIfImpl {
     /// Translates a virtual address to a physical address.
     fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
         let vaddr = vaddr.as_usize();
-        if vaddr & 0xffff_0000_0000_0000 == BOOT_VIRT_OFFSET {
-            pa!(vaddr - BOOT_VIRT_OFFSET)
+        if vaddr & 0xffff_0000_0000_0000 == PHYS_BOOT_OFFSET {
+            pa!(vaddr - PHYS_BOOT_OFFSET)
         } else {
             pa!(vaddr - PHYS_VIRT_OFFSET)
         }

@@ -1,7 +1,7 @@
 use axplat::mem::{Aligned4K, pa, va};
 use page_table_entry::{GenericPTE, MappingFlags, loongarch64::LA64PTE};
 
-use crate::config::plat::{BOOT_STACK_SIZE, BOOT_VIRT_OFFSET, PHYS_VIRT_OFFSET};
+use crate::config::plat::{BOOT_STACK_SIZE, PHYS_BOOT_OFFSET, PHYS_VIRT_OFFSET};
 
 #[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; BOOT_STACK_SIZE] = [0; BOOT_STACK_SIZE];
@@ -12,17 +12,30 @@ static mut BOOT_PT_L0: Aligned4K<[LA64PTE; 512]> = Aligned4K::new([LA64PTE::empt
 #[unsafe(link_section = ".data")]
 static mut BOOT_PT_L1: Aligned4K<[LA64PTE; 512]> = Aligned4K::new([LA64PTE::empty(); 512]);
 
+#[unsafe(link_section = ".data")]
+static mut BOOT_PT_L2: Aligned4K<[LA64PTE; 512]> = Aligned4K::new([LA64PTE::empty(); 512]);
+
 unsafe fn init_boot_page_table() {
     unsafe {
         let l1_va = va!(&raw const BOOT_PT_L1 as usize);
         // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
         BOOT_PT_L0[0x100] = LA64PTE::new_table(axplat::mem::virt_to_phys(l1_va));
-        // 0x0000_0000..0x4000_0000, VPWXGD, 1G block
-        BOOT_PT_L1[0x0] = LA64PTE::new_page(
-            pa!(0),
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
-            true,
-        );
+        let l2_va = va!(&raw const BOOT_PT_L2 as usize);
+        // 0x0000_0000..0x4000_0000, table
+        BOOT_PT_L1[0] = LA64PTE::new_table(axplat::mem::virt_to_phys(l2_va));
+        for i in 0..512 {
+            BOOT_PT_L2[i] = LA64PTE::new_page(
+                pa!(i << 21),
+                MappingFlags::READ
+                    | MappingFlags::WRITE
+                    | if i < 128 {
+                        MappingFlags::EXECUTE
+                    } else {
+                        MappingFlags::DEVICE
+                    },
+                true,
+            );
+        }
         // 0x8000_0000..0xc000_0000, VPWXGD, 1G block
         BOOT_PT_L1[0x2] = LA64PTE::new_page(
             pa!(0x8000_0000),
@@ -46,11 +59,11 @@ fn enable_fp_simd() {
 fn init_mmu() {
     axcpu::init::init_mmu(
         axplat::mem::virt_to_phys(va!(&raw const BOOT_PT_L0 as usize)),
-        BOOT_VIRT_OFFSET,
+        PHYS_BOOT_OFFSET,
     );
 }
 
-const LA_CSR_DMW0: usize = 0x180; // DMWIN0
+const BOOT_TO_VIRT: usize = PHYS_VIRT_OFFSET - PHYS_BOOT_OFFSET;
 
 /// The earliest entry point for the primary CPU.
 ///
@@ -60,20 +73,20 @@ const LA_CSR_DMW0: usize = 0x180; // DMWIN0
 #[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
     core::arch::naked_asm!("
-        .word   0x5a4d              // MZ, MS-DOS header
-        .word   0                   // Reserved
-        .dword  0x80000040          // Kernel entry point
-        .dword  _ekernel - _skernel // Kernel image effective size
-        .dword  0x80000000          // Kernel image load offset from start of RAM
-        .dword  0                   // Reserved
-        .dword  0                   // Reserved
-        .dword  0                   // Reserved
-        .word   0x818223cd          // Magic number
-        .word   0x0                 // Offset to the PE header
+        .word   0x5a4d              # MZ, MS-DOS header
+        .word   0                   # Reserved
+        .dword  0x00200040          # Kernel entry point
+        .dword  _ekernel - _skernel # Kernel image effective size
+        .dword  0x00200000          # Kernel image load offset from start of RAM
+        .dword  0                   # Reserved
+        .dword  0                   # Reserved
+        .dword  0                   # Reserved
+        .word   0x818223cd          # Magic number
+        .word   0x0                 # Offset to the PE header
 
         # Setup DMW
         li.d        $t0, {boot_virt_offset} | 0x11
-        csrwr       $t0, {la_csr_dmwin0}
+        csrwr       $t0, 0x180          # DMWIN0
 
         # Jump to DMW region
         la.local    $t0, 1f
@@ -93,9 +106,7 @@ unsafe extern "C" fn _start() -> ! {
         bl          {init_mmu}          # setup boot page table and enable MMU
 
         # Adjust stack pointer
-        li.d        $t0, {boot_virt_offset}
-        sub.d       $sp, $sp, $t0
-        li.d        $t0, {phys_virt_offset}
+        li.d        $t0, {boot_to_virt}
         add.d       $sp, $sp, $t0
 
         csrrd       $a0, 0x20           # cpuid
@@ -103,9 +114,8 @@ unsafe extern "C" fn _start() -> ! {
         la.global   $t0, {entry}
         jirl        $zero, $t0, 0",
 
-        la_csr_dmwin0 = const LA_CSR_DMW0,
-        boot_virt_offset = const BOOT_VIRT_OFFSET,
-        phys_virt_offset = const PHYS_VIRT_OFFSET,
+        boot_virt_offset = const PHYS_BOOT_OFFSET,
+        boot_to_virt = const BOOT_TO_VIRT,
 
         boot_stack = sym BOOT_STACK,
         boot_stack_size = const BOOT_STACK_SIZE,
@@ -126,8 +136,8 @@ pub(crate) unsafe extern "C" fn _start_secondary() -> ! {
         iocsrrd.d   $sp,  $t0           # Load stack pointer
 
         # Setup DMW
-        li.d        $t0, {boot_virt_offset} | 0x11
-        csrwr       $t0, {la_csr_dmwin0}
+        li.d        $t0, {phys_boot_offset} | 0x11
+        csrwr       $t0, 0x180          # DMWIN0
         # Already in DMW region
 
         # Init MMU
@@ -135,18 +145,15 @@ pub(crate) unsafe extern "C" fn _start_secondary() -> ! {
         bl          {init_mmu}          # setup boot page table and enable MMU
 
         # Adjust stack pointer
-        li.d        $t0, {boot_virt_offset}
-        sub.d       $sp, $sp, $t0
-        li.d        $t0, {phys_virt_offset}
+        li.d        $t0, {boot_to_virt}
         add.d       $sp, $sp, $t0
 
         csrrd       $a0, 0x20           # cpuid
         la.global   $t0, {entry}
         jirl        $zero, $t0, 0",
 
-        la_csr_dmwin0 = const LA_CSR_DMW0,
-        boot_virt_offset = const BOOT_VIRT_OFFSET,
-        phys_virt_offset = const PHYS_VIRT_OFFSET,
+        phys_boot_offset = const PHYS_BOOT_OFFSET,
+        boot_to_virt = const BOOT_TO_VIRT,
 
         enable_fp_simd = sym enable_fp_simd,
         init_mmu = sym init_mmu,
