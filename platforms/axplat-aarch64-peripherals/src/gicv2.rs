@@ -1,6 +1,6 @@
 //! ARM Generic Interrupt Controller (GIC).
 
-use arm_gic_driver::v3::{Gic, IntId, SGITarget, TrapOp, VirtAddr, send_sgi};
+use arm_gic_driver::v2::{Ack, Gic, IntId, SGITarget, TargetList, TrapOp, VirtAddr};
 use axplat::irq::{HandlerTable, IpiTarget, IrqHandler};
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
@@ -50,37 +50,37 @@ pub fn unregister_handler(irq_num: usize) -> Option<IrqHandler> {
 /// IRQ handler table and calls the corresponding handler. If necessary, it
 /// also acknowledges the interrupt controller after handling.
 pub fn handle_irq(_unused: usize) {
-    // 在GICv3中，先尝试ack0获取中断，如果是特殊值（1020-1023）再尝试ack1
-    let irq_num = TRAP_OP.ack0();
-    let raw_id = irq_num.to_u32();
-    
-    // 检查是否为特殊中断ID（1020-1023）
-    if raw_id >= 1020 && raw_id <= 1023 {
+    let ack = TRAP_OP.ack();
+    if ack.is_special() {
         return;
     }
 
-    trace!("Handling IRQ: {:?}", irq_num);
+    trace!("Handling IRQ: {ack:?}");
 
-    if !IRQ_HANDLER_TABLE.handle(raw_id as _) {
+    let irq_num = match ack {
+        Ack::Other(intid) => intid,
+        Ack::SGI { intid, cpu_id: _ } => intid,
+    };
+
+    if !IRQ_HANDLER_TABLE.handle(irq_num.to_u32() as _) {
         warn!("Unhandled IRQ {:?}", irq_num);
     }
 
-    // 发送EOI信号
-    TRAP_OP.eoi0(irq_num);
-    
-    // 如果是两步EOI模式，还需要发送DIR命令
-    if TRAP_OP.eoi_mode() {
-        TRAP_OP.dir(irq_num);
+    if !ack.is_special() {
+        TRAP_OP.eoi(ack);
+        if TRAP_OP.eoi_mode_ns() {
+            TRAP_OP.dir(ack);
+        }
     }
 }
 
 /// Initializes GIC
-pub fn init_gic(gicd_base: axplat::mem::VirtAddr, gicr_base: axplat::mem::VirtAddr) {
-    info!("Initialize GICv3...");
+pub fn init_gic(gicd_base: axplat::mem::VirtAddr, gicc_base: axplat::mem::VirtAddr) {
+    info!("Initialize GICv2...");
     let gicd_base = VirtAddr::new(gicd_base.into());
-    let gicr_base = VirtAddr::new(gicr_base.into());
+    let gicc_base = VirtAddr::new(gicc_base.into());
 
-    let mut gic = unsafe { Gic::new(gicd_base, gicr_base) };
+    let mut gic = unsafe { Gic::new(gicd_base, gicc_base, None) };
     gic.init();
 
     GIC.init_once(SpinNoIrq::new(gic));
@@ -94,35 +94,30 @@ pub fn init_gic(gicd_base: axplat::mem::VirtAddr, gicr_base: axplat::mem::VirtAd
 pub fn init_gicc() {
     debug!("Initialize GIC CPU Interface...");
     let mut cpu = GIC.lock().cpu_interface();
-    cpu.init_current_cpu().unwrap();
-    cpu.set_eoi_mode(false);
+    cpu.init_current_cpu();
+    cpu.set_eoi_mode_ns(false);
 }
 
 /// Sends an inter-processor interrupt (IPI) to the specified target CPU or all CPUs.
 pub fn send_ipi(irq_num: usize, target: IpiTarget) {
     match target {
-        IpiTarget::Current { cpu_id } => {
-            // 在GICv3中，向当前CPU发送SGI可以直接使用All并结合IRM位
-            let sgi_id = IntId::sgi(irq_num as u32);
-            send_sgi(sgi_id, SGITarget::All);
+        IpiTarget::Current { cpu_id: _ } => {
+            GIC.lock()
+                .send_sgi(IntId::sgi(irq_num as u32), SGITarget::Current);
         }
         IpiTarget::Other { cpu_id } => {
-            // 在GICv3中，使用affinity路由机制
-            let sgi_id = IntId::sgi(irq_num as u32);
-            // 假设cpu_id是线性ID，需要转换为affinity值
-            // 这里简化处理，实际应用中可能需要更复杂的转换
-            let target_aff = arm_gic_driver::v3::Affinity {
-                aff3: 0,
-                aff2: 0,
-                aff1: (cpu_id >> 8) as u8,
-                aff0: cpu_id as u8,
-            };
-            send_sgi(sgi_id, SGITarget::list([target_aff]));
+            let target_list = TargetList::new(&mut [cpu_id].into_iter());
+            GIC.lock().send_sgi(
+                IntId::sgi(irq_num as u32),
+                SGITarget::TargetList(target_list),
+            );
         }
-        IpiTarget::AllExceptCurrent { cpu_id, .. } => {
-            // 在GICv3中，可以使用All并结合IRM位实现类似功能
-            let sgi_id = IntId::sgi(irq_num as u32);
-            send_sgi(sgi_id, SGITarget::All);
+        IpiTarget::AllExceptCurrent {
+            cpu_id: _,
+            cpu_num: _,
+        } => {
+            GIC.lock()
+                .send_sgi(IntId::sgi(irq_num as u32), SGITarget::AllOther);
         }
     }
 }
@@ -145,8 +140,7 @@ macro_rules! irq_if_impl {
             /// It also enables the IRQ if the registration succeeds. It returns `false`
             /// if the registration failed.
             fn register(irq: usize, handler: axplat::irq::IrqHandler) -> bool {
-                $crate::gic::register_handler(irq, handler);
-                true
+                $crate::gic::register_handler(irq, handler)
             }
 
             /// Unregisters the IRQ handler for the given IRQ.
