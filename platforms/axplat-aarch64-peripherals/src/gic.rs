@@ -1,169 +1,115 @@
-//! ARM Generic Interrupt Controller (GIC).
+//! GICv3 中断控制器
 
-use arm_gic_driver::v2::{Ack, Gic, IntId, SGITarget, TargetList, TrapOp, VirtAddr};
-use axplat::irq::{HandlerTable, IpiTarget, IrqHandler};
+use arm_gic_driver::v3::Gic;
 use kspin::SpinNoIrq;
-use lazyinit::LazyInit;
+use alloc::boxed::Box;
+use core::ptr::NonNull;
+use aarch64_cpu::registers::*;
+use axplat::irq::{IrqIf, HandlerTable, IrqHandler};
 
-/// The maximum number of IRQs.
+
 const MAX_IRQ_COUNT: usize = 1024;
-
-static GIC: LazyInit<SpinNoIrq<Gic>> = LazyInit::new();
-
-static TRAP_OP: LazyInit<TrapOp> = LazyInit::new();
-
 static IRQ_HANDLER_TABLE: HandlerTable<MAX_IRQ_COUNT> = HandlerTable::new();
 
-/// Enables or disables the given IRQ.
-pub fn set_enable(irq_num: usize, enabled: bool) {
-    trace!("GIC set enable: {} {}", irq_num, enabled);
-    let intid = unsafe { IntId::raw(irq_num as u32) };
-    GIC.lock().set_irq_enable(intid, enabled);
-}
+static GICD: SpinNoIrq<Option<Gic>> = SpinNoIrq::new(None);
+static GICR: SpinNoIrq<Option<Box<dyn arm_gic_driver::local::Interface>>> = SpinNoIrq::new(None);
 
-/// Registers an IRQ handler for the given IRQ.
-///
-/// It also enables the IRQ if the registration succeeds. It returns `false`
-/// if the registration failed.
-pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
-    if IRQ_HANDLER_TABLE.register_handler(irq_num, handler) {
-        trace!("register handler IRQ {}", irq_num);
-        set_enable(irq_num, true);
-        return true;
-    }
-    false
-}
-
-/// Unregisters the IRQ handler for the given IRQ.
-///
-/// It also disables the IRQ if the unregistration succeeds. It returns the
-/// existing handler if it is registered, `None` otherwise.
-pub fn unregister_handler(irq_num: usize) -> Option<IrqHandler> {
-    trace!("unregister handler IRQ {}", irq_num);
-    set_enable(irq_num, false);
-    IRQ_HANDLER_TABLE.unregister_handler(irq_num)
-}
-
-/// Handles the IRQ.
-///
-/// It is called by the common interrupt handler. It should look up in the
-/// IRQ handler table and calls the corresponding handler. If necessary, it
-/// also acknowledges the interrupt controller after handling.
-pub fn handle_irq(_unused: usize) {
-    let ack = TRAP_OP.ack();
-    if ack.is_special() {
-        return;
+pub struct IrqIfImpl;
+impl IrqIf for IrqIfImpl {
+    fn set_enable(irq: usize, enabled: bool) {
+        warn!("call GIC set enable: {} {}, but it is not implemented", irq, enabled);
     }
 
-    trace!("Handling IRQ: {ack:?}");
-
-    let irq_num = match ack {
-        Ack::Other(intid) => intid,
-        Ack::SGI { intid, cpu_id: _ } => intid,
-    };
-
-    if !IRQ_HANDLER_TABLE.handle(irq_num.to_u32() as _) {
-        warn!("Unhandled IRQ {:?}", irq_num);
-    }
-
-    if !ack.is_special() {
-        TRAP_OP.eoi(ack);
-        if TRAP_OP.eoi_mode_ns() {
-            TRAP_OP.dir(ack);
+    fn register(irq: usize, handler: IrqHandler) -> bool {
+        if IRQ_HANDLER_TABLE.register_handler(irq, handler) {
+            Self::set_enable(irq, true);
+            true
+        } else {
+            false
         }
+    }
+
+    fn unregister(irq: usize) -> Option<IrqHandler> {
+        Self::set_enable(irq, false);
+        IRQ_HANDLER_TABLE.unregister_handler(irq)
+    }
+
+    fn handle(_unused: usize) {
+        let Some(irq) =  GICR.lock().as_mut().unwrap().ack() else {
+            return;
+        };
+        let irq_num: usize = irq.into();
+        // trace!("IRQ {}", irq_num);
+        if !IRQ_HANDLER_TABLE.handle(irq_num as _) {
+            warn!("Unhandled IRQ {irq_num}");
+        }
+
+        GICR.lock().as_mut().unwrap().eoi(irq);
+        if GICR.lock().as_mut().unwrap().get_eoi_mode() {
+            GICR.lock().as_mut().unwrap().dir(irq);
+        }
+    }
+
+    fn send_ipi(irq_num: usize, target: axplat::irq::IpiTarget) {
+        todo!("send ipi");
     }
 }
 
-/// Initializes GIC
-pub fn init_gic(gicd_base: axplat::mem::VirtAddr, gicc_base: axplat::mem::VirtAddr) {
-    info!("Initialize GICv2...");
-    let gicd_base = VirtAddr::new(gicd_base.into());
-    let gicc_base = VirtAddr::new(gicc_base.into());
+pub(crate) fn init(gicd_base: axplat::mem::VirtAddr, gicr_base: axplat::mem::VirtAddr) {
+ let mut gicd = arm_gic_driver::v3::Gic::new(
+        NonNull::new(gicd_base.as_mut_ptr()).unwrap(),
+        NonNull::new(gicr_base.as_mut_ptr()).unwrap(),
+    );
 
-    let mut gic = unsafe { Gic::new(gicd_base, gicc_base, None) };
-    gic.init();
+     debug!("Initializing GICD at {:#x}", gicd_base);
+    gicd.open().unwrap();
 
-    GIC.init_once(SpinNoIrq::new(gic));
-    let cpu = GIC.lock().cpu_interface();
-    TRAP_OP.init_once(cpu.trap_operations());
+    info!(
+        "Initializing GICR for BSP. Global GICR base at {:#x}",
+        gicr_base
+    );
+    let mut interface = gicd.cpu_local().unwrap();
+    interface.open().unwrap();
+
+    GICD.lock().replace(gicd);
+    GICR.lock().replace(interface);
+    info!("GIC initialized {}",current_cpu());
 }
 
-/// Initializes GICC (for all CPUs).
-///
-/// It must be called after [`init_gic`].
-pub fn init_gicc() {
-    debug!("Initialize GIC CPU Interface...");
-    let mut cpu = GIC.lock().cpu_interface();
-    cpu.init_current_cpu();
-    cpu.set_eoi_mode_ns(false);
+#[allow(dead_code)]
+pub(crate) fn init_current_cpu() {
+    debug!("Initializing GICR for current CPU {}",current_cpu());
+    let mut interface = GICD.lock().as_mut().unwrap().cpu_local().unwrap();
+    interface.open().unwrap();
+    GICR.lock().replace(interface);
+    debug!(  "Initialized GICR for current CPU {}",current_cpu());
 }
 
-/// Sends an inter-processor interrupt (IPI) to the specified target CPU or all CPUs.
-pub fn send_ipi(irq_num: usize, target: IpiTarget) {
-    match target {
-        IpiTarget::Current { cpu_id: _ } => {
-            GIC.lock()
-                .send_sgi(IntId::sgi(irq_num as u32), SGITarget::Current);
+fn current_cpu() -> usize {
+    MPIDR_EL1.get() as usize & 0xffffff
+}
+
+pub(crate) fn set_enable(irq_num: usize, enabled: bool) {
+    use arm_gic_driver::local::cap::ConfigLocalIrq;
+
+    let mut gicd = GICD.lock();
+    let d = gicd.as_mut().unwrap();
+
+    if irq_num < 32 {
+        trace!("GICR set enable: {} {}", irq_num, enabled);
+
+        if enabled {
+            d.get_gicr().irq_enable(irq_num.into()).unwrap();
+        } else {
+            d.get_gicr().irq_disable(irq_num.into()).unwrap();
         }
-        IpiTarget::Other { cpu_id } => {
-            let target_list = TargetList::new(&mut [cpu_id].into_iter());
-            GIC.lock().send_sgi(
-                IntId::sgi(irq_num as u32),
-                SGITarget::TargetList(target_list),
-            );
-        }
-        IpiTarget::AllExceptCurrent {
-            cpu_id: _,
-            cpu_num: _,
-        } => {
-            GIC.lock()
-                .send_sgi(IntId::sgi(irq_num as u32), SGITarget::AllOther);
+    } else {
+        trace!("GICD set enable: {} {}", irq_num, enabled);
+
+        if enabled {
+            d.irq_enable(irq_num.into()).unwrap();
+        } else {
+            d.irq_disable(irq_num.into()).unwrap();
         }
     }
-}
-
-/// Default implementation of [`axplat::irq::IrqIf`] using the GIC.
-#[macro_export]
-macro_rules! irq_if_impl {
-    ($name:ident) => {
-        struct $name;
-
-        #[impl_plat_interface]
-        impl axplat::irq::IrqIf for $name {
-            /// Enables or disables the given IRQ.
-            fn set_enable(irq: usize, enabled: bool) {
-                $crate::gic::set_enable(irq, enabled);
-            }
-
-            /// Registers an IRQ handler for the given IRQ.
-            ///
-            /// It also enables the IRQ if the registration succeeds. It returns `false`
-            /// if the registration failed.
-            fn register(irq: usize, handler: axplat::irq::IrqHandler) -> bool {
-                $crate::gic::register_handler(irq, handler)
-            }
-
-            /// Unregisters the IRQ handler for the given IRQ.
-            ///
-            /// It also disables the IRQ if the unregistration succeeds. It returns the
-            /// existing handler if it is registered, `None` otherwise.
-            fn unregister(irq: usize) -> Option<axplat::irq::IrqHandler> {
-                $crate::gic::unregister_handler(irq)
-            }
-
-            /// Handles the IRQ.
-            ///
-            /// It is called by the common interrupt handler. It should look up in the
-            /// IRQ handler table and calls the corresponding handler. If necessary, it
-            /// also acknowledges the interrupt controller after handling.
-            fn handle(irq: usize) {
-                $crate::gic::handle_irq(irq)
-            }
-
-            /// Sends an inter-processor interrupt (IPI) to the specified target CPU or all CPUs.
-            fn send_ipi(irq_num: usize, target: axplat::irq::IpiTarget) {
-                $crate::gic::send_ipi(irq_num, target);
-            }
-        }
-    };
 }

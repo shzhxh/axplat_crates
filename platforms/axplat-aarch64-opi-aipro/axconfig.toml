@@ -10,7 +10,7 @@ package = "axplat-aarch64-opi-aipro"           # str
 #
 [plat]
 # Number of CPUs.
-cpu-num = 4                         # uint
+cpu-num = 1                         # uint
 # Base address of the whole physical memory.
 phys-memory-base = 0x0000_0000      # uint
 # Size of the whole physical memory. (~2G)
@@ -54,13 +54,20 @@ mmio-ranges = [
     ["0x3_0018_0000", "0x10000"],      # MIO1 - I2C
     ["0x3_001a_0000", "0x10000"],      # MIO2 - I2C
 
-    ["0x000_c404_0000", "0x10000"],      # GPIO0 
-    ["0x000_c405_0000", "0x10000"],      # GPIO1 
-    ["0x000_820f_0000", "0x10000"],      # GPIO2 
-    ["0x000_8210_0000", "0x10000"],      # GPIO3 
-    ["0x000_a016_0000", "0x10000"],      # GPIO4 
-    ["0x003_0016_0000", "0x10000"],      # GPIO5
-    ["0x004_0015_0000", "0x10000"],
+    ["0xc404_0000", "0x10000"],      # GPIO0 
+    ["0xc405_0000", "0x10000"],      # GPIO1 
+    ["0x820f_0000", "0x10000"],      # GPIO2 
+    ["0x8210_0000", "0x10000"],      # GPIO3 
+    ["0xa016_0000", "0x10000"],      # GPIO4 
+    ["0x3_0016_0000", "0x10000"],      # GPIO5
+    ["0x4_0015_0000", "0x10000"],
+
+    ["0xd000_0000", "0x10000"],     # gicd
+    ["0xd010_0000", "0x80_0000"],   # gicr
+    ["0xd200_0000", "0x10_0000"],   # gic-its
+
+    ["0x8200_0000", "0x10000"],      # mmc
+    ["0x8201_0000", "0x10000"],      # sd
   ]                               # [(uint, uint)]
 # VirtIO MMIO ranges with format (`base_paddr`, `size`).
 virtio-mmio-ranges = []        # [(uint, uint)]
@@ -82,6 +89,6 @@ timer-irq = 0x04                # uint
 ipi-irq = 1                     # uint
 
 # GIC CPU Interface base address
-gicc-paddr = 0xd010_0000        # uint
+gicr-paddr = 0xd010_0000        # uint
 # GIC Distributor base address
 gicd-paddr = 0xd000_0000        # uint

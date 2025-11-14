@@ -35,11 +35,11 @@ impl InitIf for InitIfImpl {
     fn init_later(_cpu_id: usize, _dtb: usize) {
         #[cfg(feature = "irq")]
         {
-            axplat_aarch64_peripherals::gic::init_gic(
+            axplat_aarch64_peripherals::gic::init(
                 phys_to_virt(pa!(GICD_PADDR)),
                 phys_to_virt(pa!(GICC_PADDR)),
             );
-            axplat_aarch64_peripherals::gic::init_gicc();
+            axplat_aarch64_peripherals::gic::init_current_cpu();
             axplat_aarch64_peripherals::generic_timer::enable_irqs(TIMER_IRQ);
         }
     }

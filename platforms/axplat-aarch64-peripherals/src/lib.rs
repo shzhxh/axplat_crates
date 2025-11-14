@@ -3,6 +3,7 @@
 
 #[macro_use]
 extern crate log;
+extern crate alloc;
 
 pub mod generic_timer;
 pub mod gic;
